@@ -174,6 +174,12 @@ uint16_t port = 7682;
 char destination[15] = "local";
 char rxName[32] = "Not Defined";
 char rxLatLong[32] = "Not Defined";
+int16_t lat_deg = 0;
+uint16_t lat_min = 0;
+uint16_t lat_sec = 0;
+int16_t lon_deg = 0;
+uint16_t lon_min = 0;
+uint16_t lon_sec = 0;
 
 int markerx = 250;
 int markery = 15;
@@ -514,14 +520,36 @@ void CheckConfigFile()
 
   if (WEXITSTATUS(r) != 0)
   {
-    printf("remoterfgain parameter not detected\n");
+    printf("rxname parameter not detected\n");
     printf("Adding 2 parameters to config file\n");
 
     sprintf(shell_command, "echo rxname=Not Defined >> %s", PATH_CONFIG);
     system(shell_command);
-    sprintf(shell_command, "echo rxlatlong=Not Defined >> %s", PATH_CONFIG);
+  }
+
+  // Check for new Location details
+  sprintf(shell_command, "grep -q 'latdeg' %s", PATH_CONFIG);
+  fp = popen(shell_command, "r");
+  r = pclose(fp);
+
+  if (WEXITSTATUS(r) != 0)
+  {
+    printf("new lat and lon parameters not detected\n");
+    printf("Adding 6 parameters to config file\n");
+
+    sprintf(shell_command, "echo latdeg=50 >> %s", PATH_CONFIG);
     system(shell_command);
-  } 
+    sprintf(shell_command, "echo latmin=0 >> %s", PATH_CONFIG);
+    system(shell_command);
+    sprintf(shell_command, "echo latsec=0 >> %s", PATH_CONFIG);
+    system(shell_command);
+    sprintf(shell_command, "echo londeg=-1 >> %s", PATH_CONFIG);
+    system(shell_command);
+    sprintf(shell_command, "echo lonmin=0 >> %s", PATH_CONFIG);
+    system(shell_command);
+    sprintf(shell_command, "echo lonsec=0 >> %s", PATH_CONFIG);
+    system(shell_command);
+  }
 }
 
 
@@ -678,7 +706,30 @@ void ReadSavedParams()
   remoteIFgain = atoi(response);
 
   GetConfigParam(PATH_CONFIG, "rxname", rxName);
-  GetConfigParam(PATH_CONFIG, "rxlatlong", rxLatLong);
+
+  strcpy(response, "0");
+  GetConfigParam(PATH_CONFIG, "latdeg", response);
+  lat_deg = atoi(response);
+
+  strcpy(response, "0");
+  GetConfigParam(PATH_CONFIG, "latmin", response);
+  lat_min = atoi(response);
+
+  strcpy(response, "0");
+  GetConfigParam(PATH_CONFIG, "latsec", response);
+  lat_sec = atoi(response);
+
+  strcpy(response, "0");
+  GetConfigParam(PATH_CONFIG, "londeg", response);
+  lon_deg = atoi(response);
+
+  strcpy(response, "0");
+  GetConfigParam(PATH_CONFIG, "lonmin", response);
+  lon_min = atoi(response);
+
+  strcpy(response, "0");
+  GetConfigParam(PATH_CONFIG, "lonsec", response);
+  lon_sec = atoi(response);
 }
 
 
@@ -2685,34 +2736,141 @@ void SetStream(int button)
       // Ask for the new value
       do
       {
-        Keyboard(RequestText, InitText, 31);
+        Keyboard(RequestText, InitText, 21);
       }
       while (strlen(KeyboardReturn) == 0);
 
-      strcpyn(rxName, KeyboardReturn, 31);
+      strcpyn(rxName, KeyboardReturn, 21);
       
       // Store the new rxName
       SetConfigParam(PATH_CONFIG, "rxname", rxName);
       printf("Reciver Name set to %s\n", rxName);
 
-      // Define request string
-      strcpy(RequestText, "Enter the Receiver Lat Long as text");
+      // Define request string                                                    For degrees
+      strcpy(RequestText, "Enter the Receiver Latitude degrees (-90 to 90)");
 
       // Define initial value
-      strcpy(InitText, rxLatLong);
+      snprintf(InitText, 7, "%d", lat_deg);
 
       // Ask for the new value
       do
       {
-        Keyboard(RequestText, InitText, 31);
+        Keyboard(RequestText, InitText, 3);
       }
-      while (strlen(KeyboardReturn) == 0);
+      while ((atoi(KeyboardReturn) < -90) || (atoi(KeyboardReturn) > 90));
 
-      strcpyn(rxLatLong, KeyboardReturn, 31);
+      lat_deg = atoi(KeyboardReturn);
       
-      // Store the new rxLatLong
-      SetConfigParam(PATH_CONFIG, "rxlatlong", rxLatLong);
-      printf("Reciver Lat long set to %s\n", rxLatLong);
+      // Store the new latdeg
+      snprintf(ValueToSave, 7, "%d", lat_deg);
+
+      SetConfigParam(PATH_CONFIG, "latdeg", ValueToSave);
+      printf("Receiver Lat degrees set to %s\n", ValueToSave);
+
+      // Define request string                                                    For minutes
+      strcpy(RequestText, "Enter the Receiver Latitude minutes (0 to 59)");
+
+      // Define initial value
+      snprintf(InitText, 6, "%d", lat_min);
+
+      // Ask for the new value
+      do
+      {
+        Keyboard(RequestText, InitText, 2);
+      }
+      while ((atoi(KeyboardReturn) < 0) || (atoi(KeyboardReturn) > 59));
+
+      lat_min = atoi(KeyboardReturn);
+      
+      // Store the new latmin
+      snprintf(ValueToSave, 6, "%d", lat_min);
+
+      SetConfigParam(PATH_CONFIG, "latmin", ValueToSave);
+      printf("Receiver Lat minutes set to %s\n", ValueToSave);
+
+      // Define request string                                                    For seconds
+      strcpy(RequestText, "Enter the Receiver Latitude seconds (0 to 59)");
+
+      // Define initial value
+      snprintf(InitText, 6, "%d", lat_sec);
+
+      // Ask for the new value
+      do
+      {
+        Keyboard(RequestText, InitText, 2);
+      }
+      while ((atoi(KeyboardReturn) < 0) || (atoi(KeyboardReturn) > 59));
+
+      lat_sec = atoi(KeyboardReturn);
+      
+      // Store the new latsec
+      snprintf(ValueToSave, 6, "%d", lat_sec);
+
+      SetConfigParam(PATH_CONFIG, "latsec", ValueToSave);
+      printf("Receiver Lat seconds set to %s\n", ValueToSave);
+
+      // Define request string                                                    For lon degrees
+      strcpy(RequestText, "Enter the Receiver Longitude degrees (-180 to 180)");
+
+      // Define initial value
+      snprintf(InitText, 7, "%d", lon_deg);
+
+      // Ask for the new value
+      do
+      {
+        Keyboard(RequestText, InitText, 3);
+      }
+      while ((atoi(KeyboardReturn) < -180) || (atoi(KeyboardReturn) > 180));
+
+      lon_deg = atoi(KeyboardReturn);
+      
+      // Store the new londeg
+      snprintf(ValueToSave, 7, "%d", lon_deg);
+
+      SetConfigParam(PATH_CONFIG, "londeg", ValueToSave);
+      printf("Receiver Lon degrees set to %s\n", ValueToSave);
+
+      // Define request string                                                    For lon minutes
+      strcpy(RequestText, "Enter the Receiver Longitude minutes (0 to 59)");
+
+      // Define initial value
+      snprintf(InitText, 6, "%d", lon_min);
+
+      // Ask for the new value
+      do
+      {
+        Keyboard(RequestText, InitText, 2);
+      }
+      while ((atoi(KeyboardReturn) < 0) || (atoi(KeyboardReturn) > 59));
+
+      lon_min = atoi(KeyboardReturn);
+      
+      // Store the new lonmin
+      snprintf(ValueToSave, 6, "%d", lon_min);
+
+      SetConfigParam(PATH_CONFIG, "lonmin", ValueToSave);
+      printf("Receiver Lon minutes set to %s\n", ValueToSave);
+
+      // Define request string                                                    For lon seconds
+      strcpy(RequestText, "Enter the Receiver Longitude seconds (0 to 59)");
+
+      // Define initial value
+      snprintf(InitText, 6, "%d", lon_sec);
+
+      // Ask for the new value
+      do
+      {
+        Keyboard(RequestText, InitText, 2);
+      }
+      while ((atoi(KeyboardReturn) < 0) || (atoi(KeyboardReturn) > 59));
+
+      lon_sec = atoi(KeyboardReturn);
+      
+      // Store the new lonsec
+      snprintf(ValueToSave, 6, "%d", lon_sec);
+
+      SetConfigParam(PATH_CONFIG, "lonsec", ValueToSave);
+      printf("Receiver Lon seconds set to %s\n", ValueToSave);
 
       break;
   }

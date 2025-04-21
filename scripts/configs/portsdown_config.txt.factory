@@ -9,6 +9,7 @@ labelofband=70_cm
 attenlevel=-10.0
 explevel=30
 limegain=88
+muntjacgain=10
 expports=2
 rfpower=7
 analogcamname=auto

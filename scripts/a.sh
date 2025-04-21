@@ -340,6 +340,24 @@ case "$MODE_OUTPUT" in
   "JLIME" | "JEXPRESS")
     LIME_GAIN=$(get_config_var limegain $PCONFIGFILE)
   ;;
+
+  "MUNTJAC")
+    OUTPUT=videots
+
+    BAND_GPIO=$(get_config_var expports $PCONFIGFILE)
+
+    # Allow for GPIOs in 16 - 31 range (direct setting)
+    if [ "$BAND_GPIO" -gt "15" ]; then
+      let BAND_GPIO=$BAND_GPIO-16
+    fi
+
+    MUNTJAC_GAIN=$(get_config_var muntjacgain $PCONFIGFILE)
+    $PATHSCRIPT"/ctlfilter.sh"
+  ;;
+
+  "JLIME" | "JEXPRESS")
+    LIME_GAIN=$(get_config_var limegain $PCONFIGFILE)
+  ;;
 esac
 
 OUTPUT_QPSK="videots"
@@ -543,10 +561,15 @@ case "$MODE_OUTPUT" in
       fi
     fi
   ;;
+  "MUNTJAC")
+    MUNTJAC_GAINF=`echo - | awk '{print '$MUNTJAC_GAIN' / 100}'`
+    UPSAMPLE=2
+  ;;
 esac
 
 # Set the LimeSDR Send buffer size
 LIMESENDBUF=10000
+
 
 # Clean up before starting fifos
 sudo rm videots >/dev/null 2>/dev/null
@@ -686,6 +709,10 @@ case "$MODE_INPUT" in
         $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
           -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
       ;;
+      "MUNTJAC")
+        $PATHRPI"/muntjacsdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+          -t "$FREQ_OUTPUT"e6 -g $MUNTJAC_GAINF -e $BAND_GPIO &
+      ;;
       "COMPVID")
         OUTPUT_FILE="/dev/null" #Send avc2ts output to /dev/null
       ;;
@@ -802,6 +829,10 @@ fi
       "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
         $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
           -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
+      ;;
+      "MUNTJAC")
+        $PATHRPI"/muntjacsdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+          -t "$FREQ_OUTPUT"e6 -g $MUNTJAC_GAINF -e $BAND_GPIO &
       ;;
       *)
         # For IQ, QPSKRF, DIGITHIN and DTX1 rpidatv generates the IQ (and RF for QPSKRF)
@@ -1250,6 +1281,10 @@ fi
           $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
             -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
         ;;
+        "MUNTJAC")
+          $PATHRPI"/muntjacsdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+            -t "$FREQ_OUTPUT"e6 -g $MUNTJAC_GAINF -e $BAND_GPIO &
+        ;;
         *)
           sudo $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
         ;;
@@ -1557,7 +1592,11 @@ fi
           $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
             -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
         ;;
-        *)
+        "MUNTJAC")
+          $PATHRPI"/muntjacsdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+            -t "$FREQ_OUTPUT"e6 -g $MUNTJAC_GAINF -e $BAND_GPIO &
+      ;;
+          *)
           sudo nice -n -30 $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
         ;;
       esac
@@ -1617,6 +1656,10 @@ fi
         "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
         $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
           -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
+        ;;
+        "MUNTJAC")
+          $PATHRPI"/muntjacsdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+            -t "$FREQ_OUTPUT"e6 -g $MUNTJAC_GAINF -e $BAND_GPIO &
         ;;
         "PLUTO")
         rpidatv/bin/ffmpeg -thread_queue_size 2048 \
@@ -1686,6 +1729,10 @@ fi
       "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
       $PATHRPI"/limesdr_dvb" -i $TSVIDEOFILE -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
         -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
+      ;;
+      "MUNTJAC")
+        $PATHRPI"/muntjacsdr_dvb" -i $TSVIDEOFILE -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+          -t "$FREQ_OUTPUT"e6 -g $MUNTJAC_GAINF -e $BAND_GPIO &
       ;;
 #        "PLUTO")
 #        rpidatv/bin/ffmpeg -thread_queue_size 2048 \
@@ -1880,6 +1927,10 @@ fi
       "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
         $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
         -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
+      ;;
+      "MUNTJAC")
+        $PATHRPI"/muntjacsdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+          -t "$FREQ_OUTPUT"e6 -g $MUNTJAC_GAINF -e $BAND_GPIO &
       ;;
       *)
         # For IQ, QPSKRF, DIGITHIN and DTX1 rpidatv generates the IQ (and RF for QPSKRF)
@@ -2105,6 +2156,10 @@ exit
         $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
         -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
       ;;
+      "MUNTJAC")
+        $PATHRPI"/muntjacsdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+          -t "$FREQ_OUTPUT"e6 -g $MUNTJAC_GAINF -e $BAND_GPIO &
+      ;;
       *)
         # For IQ, QPSKRF, DIGITHIN and DTX1 rpidatv generates the IQ (and RF for QPSKRF)
         sudo $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &
@@ -2326,6 +2381,10 @@ exit
         "LIMEMINI" | "LIMEUSB" | "LIMEDVB")
           $PATHRPI"/limesdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
             -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO $LIMETYPE &
+        ;;
+        "MUNTJAC")
+          $PATHRPI"/muntjacsdr_dvb" -i videots -s "$SYMBOLRATE_K"000 -f $FECNUM/$FECDEN -r $UPSAMPLE -m $MODTYPE -c $CONSTLN $PILOTS $FRAMES \
+            -t "$FREQ_OUTPUT"e6 -g $MUNTJAC_GAINF -e $BAND_GPIO &
         ;;
         *)
           sudo $PATHRPI"/rpidatv" -i videots -s $SYMBOLRATE_K -c $FECNUM"/"$FECDEN -f $FREQUENCY_OUT -p $GAIN -m $MODE -x $PIN_I -y $PIN_Q &

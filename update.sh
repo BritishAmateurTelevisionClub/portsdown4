@@ -438,6 +438,23 @@ make dvb
 cp limesdr_dvb /home/pi/rpidatv/bin/
 cd /home/pi
 
+# Update Muntjac
+echo
+echo "----------------------------"
+echo "----- Updating Muntjac -----"
+echo "----------------------------"
+
+cd /home/pi/rpidatv/src/muntjac
+
+gcc  muntjacsdr_dvb.c  dvbs2neon.S  -mfpu=neon  -lpthread  -o  muntjacsdr_dvb
+gcc  mjcalib-0v1a.c  dvbs2neon.S  -mfpu=neon  -lpthread  -o mjcalib  # only used for manual calibration
+
+cp muntjacsdr_dvb /home/pi/rpidatv/bin/             # Executable
+cp E46214B063533828.mjo /home/pi/rpidatv/bin/       # LO Suppression file
+
+cd /home/pi
+
+
 DisplayUpdateMsg "Step 7 of 10\nCompiling Portsdown SW\nDVB-T Transmitter\nXXXXXX----"
 
 echo
@@ -980,6 +997,34 @@ if ! grep -q timeoverlay= "$PATHSCRIPT"/portsdown_config.txt; then
   sed -i -e '/^$/d' "$PATHSCRIPT"/portsdown_config.txt
   # Add the new entry and a new line 
   echo "timeoverlay=off" >> "$PATHSCRIPT"/portsdown_config.txt
+fi
+
+# Add Muntjac entries to config file if not included 202503310
+if ! grep -q muntjacgain= "$PATHSCRIPT"/portsdown_config.txt; then
+  # File needs updating
+  # Delete any blank lines first
+  sed -i -e '/^$/d' "$PATHSCRIPT"/portsdown_config.txt
+  # Add the new entry and a new line 
+  echo "muntjacgain=15" >> "$PATHSCRIPT"/portsdown_config.txt
+  # Delete any blank lines first
+  sed -i -e '/^$/d' "$PATHSCRIPT"/portsdown_presets.txt
+  # Add the new entry and a new line 
+  echo "d0muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "d1muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "d2muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "d3muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "d4muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "d5muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "d6muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "t0muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "t1muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "t2muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "t3muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "t4muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "t5muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "t6muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "t7muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+  echo "t8muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
 fi
 
 # Add new stop alias if required  202311xxx

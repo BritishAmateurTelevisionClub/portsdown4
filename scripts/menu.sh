@@ -3166,7 +3166,7 @@ do_ud130()
   if [ $? -eq 0 ]; then
     if [[ "$UD130" == "y" || "$UD130" == "Y" ]]; then
       reset
-      sudo LimeUtil --fpga=/home/pi/.local/share/LimeSuite/images/20.10/LimeSDR-Mini_HW_1.2_r1.30.rpd
+      sudo LimeUtil --fpga=/home/pi/.local/share/LimeSuite/images/22.09/LimeSDR-Mini_HW_1.2_r1.30.rpd
       printf "\nPress any key to return to the main menu\n"
       read -n 1
     else

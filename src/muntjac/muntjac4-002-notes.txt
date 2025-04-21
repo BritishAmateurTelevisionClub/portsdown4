@@ -1,0 +1,23 @@
+muntjac4-002-notes
+==================
+
+muntjac4-0v1c.uf2 and muntjacsdr_dvb-0v2j.c remove the power limit of 15.
+The PD power correction has been removed.
+A bug affecting the LO parameters for power 15 has been corrected. (Maybe).
+
+mjcalib-0v1a.c enables the manual manipulation of the LO suppression parameters.
+Use the keys described to change power, iloc and qloc.
+The setting does not change much over each group of 4 power settings,
+so only extra settings for powers 16, 20, 24 and 28 need to be added to the .mjo file manually.
+If a power setting is not found in the .mjo file by muntjacsdr_dvb, (power & ~3) is searched for.
+Use 440 and 2400 in the .mjo file, even if the test frequencies are not exactly those.
+
+It is like dipping and loading a valve PA.
+Set the power with 'q' and 'a'.
+Hold down 'w' to cycle the iloc settings, watching band viewer.
+When the minimum LO is found, do the same with 'e' for the qloc setting.
+Repeat.
+Use single presses to home in on the minimum LO value.
+40-50dB should be possible.
+Edit the settings into the .mjo file.
+

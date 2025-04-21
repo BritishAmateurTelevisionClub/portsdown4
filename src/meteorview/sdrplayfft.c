@@ -85,7 +85,13 @@ pthread_t fftThread;
 
 extern char destination[15];
 extern char rxName[32];
-extern char rxLatLong[32];
+extern int16_t lat_deg;
+extern uint16_t lat_min;
+extern uint16_t lat_sec;
+extern int16_t lon_deg;
+extern uint16_t lon_min;
+extern uint16_t lon_sec;
+
 
 double hanning_window_const[4096];
 
@@ -126,9 +132,7 @@ unsigned long long int buf_total = 0; /* for debug */
 long int output_buffer_i[FFT_BUFFER_SIZE];
 long int output_buffer_q[FFT_BUFFER_SIZE];
 unsigned char transmit_buffer[LWS_PRE + FFT_BUFFER_SIZE*2*sizeof(short)];
-unsigned char server_buffer[TCP_DATA_PRE + FFT_BUFFER_SIZE*2*sizeof(short)]=
-      {'H','e','a','t','h','e','r','\0'}; 
-
+unsigned char server_buffer[TCP_DATA_PRE + FFT_BUFFER_SIZE*2*sizeof(short)] = {'H'}; 
 
 sdrplay_api_RxChannelParamsT *chParams;
 //sdrplay_api_DeviceT devs[6];
@@ -1037,7 +1041,79 @@ void *sdrplay_fft_thread(void *arg) {
   int transport_started = 1;
   int transport_start_attempts = 0;
 
+
+
+  // Define the Data header (which includes Lat/Long, RX Freq and Text description here
+  // Byte 0       : 'H', packet alignment byte (as per old system)
+  // Byte 1       : Latitude Degrees + 90, 0 = south pole, 180 = north pole
+  // Byte 2       : Lat Minutes, 0 to 59
+  // Byte 3       : Lat Seconds, 0 to 59
+  // Byte 4       : most sig 8 bits of Longitude Degrees + 180 i.e.   byte 4 = (uint8_t)(  (  (uint16_t)(lon_deg + 180)  )  >> 1   )
+  // Byte 5       : LSB of Lon Degrees in MSB then lower 6 bits are Minutes i.e byte 5 = (uint8_t)(  ((uint16_t)(lon_deg + 180) & 0x100) >> 1  ) + lon_min
+  // Byte 6       : Lon Seconds
+  // Byte 7       : Freq in KHz (most sig byte of 3 byte value i.e byte 7 = (uint8_t)(freq_khz >> 16)
+  // Byte 8       : client number (as per old system)
+  // Byte 9       : Freq in KHz (middle byte) i.e  byte 9 = (uint8_t)(freq_khz >> 8)
+  // Byte 10     : Freq in KHz (lower byte) i.e  byte 9 = (uint8_t)(freq_khz)
+  // Byte 11 to 31:  21 ASCII characters for name of station (with spaces for padding) e.g. "Norman Lockyer Obs.  "
+
+  // Use extern uint32_t CentreFreq;          // Frequency in Hz from main
+
+  // Destination is: unsigned char server_buffer[TCP_DATA_PRE + FFT_BUFFER_SIZE*2*sizeof(short)]= {'H','e','a','t','h','e','r','\0'};
+
+  //extern int16_t lat_deg;
+  //extern uint16_t lat_min;
+  //extern uint16_t lat_sec;
+  //extern int16_t lon_deg;
+  //extern uint16_t lon_min;
+  //extern uint16_t lon_sec;
+
+
+  uint32_t freq_khz;
+  freq_khz = CentreFreq / 1000;
+
+  server_buffer[0] = 'H';
+  server_buffer[1] = (uint8_t)(lat_deg + 90);
+  server_buffer[2] = (uint8_t)(lat_min);
+  server_buffer[3] = (uint8_t)(lat_sec);
+  server_buffer[4] = (uint8_t)(((lon_deg + 180)) >> 1);
+  server_buffer[5] = (uint8_t)(((uint16_t)(lon_deg + 180) & 0x0001) << 7) + lon_min;
+  server_buffer[6] = (uint8_t)(lon_sec);
+  server_buffer[7] = (uint8_t)(freq_khz >> 16);
   server_buffer[8] = clientnumber;
+  server_buffer[9] = (uint8_t)(freq_khz >> 8);
+  server_buffer[10] = (uint8_t)(freq_khz);
+
+  //server_buffer[1] = 'e';
+  //server_buffer[2] = 'a';
+  //server_buffer[3] = 't';
+  //server_buffer[4] = 'h';
+  //server_buffer[5] = 'e';
+  //server_buffer[6] = 'r';
+
+  for (i = 11; i <=31; i++)
+  {
+    server_buffer[i] = rxName[i - 11];
+  }
+
+  // Print out diagnostics:
+  printf("\nData Header\n\n");
+  uint8_t hbyte;
+  for (i = 0; i < 32; i++)
+  {
+    hbyte = (uint8_t)(server_buffer[i]);
+    if ((hbyte >= 32) && (hbyte <= 126))
+    {
+      printf("Byte %d: Character: %c, Value: %d\n", i, hbyte, hbyte);
+    }
+    else
+    {
+      printf("Byte %d: No Character, Value: %d\n", i, hbyte);
+    }
+  }
+  printf("\n");
+
+
 
   while (transport_started != 0)
   {
