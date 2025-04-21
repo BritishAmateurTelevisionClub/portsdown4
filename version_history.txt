@@ -1,3 +1,6 @@
+202504211
+Add new USB ID for Cam Link 4K
+
 202504210
 Correct Lime Mini update filepath in ssh menu
 

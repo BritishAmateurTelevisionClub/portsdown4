@@ -629,6 +629,13 @@ detect_video()
   fi
 
   if [ "$WEBCAM_TYPE" == "None" ]; then
+    lsusb | grep -q "0fd9:0067"
+    if [ $? == 0 ]; then
+      WEBCAM_TYPE="CamLink4K"
+    fi
+  fi
+
+  if [ "$WEBCAM_TYPE" == "None" ]; then
     lsusb | grep -q "046d:086b"
     if [ $? == 0 ]; then
       WEBCAM_TYPE="BRIO4K"
