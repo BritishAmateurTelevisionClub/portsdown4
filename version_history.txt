@@ -1,3 +1,8 @@
+202504290
+Enlarge RX mute button
+Tidy large MER Display
+Add IPTSIN264 and IPTSIN265 modes to ssh Menu
+
 202504211
 Add new USB ID for Cam Link 4K
 

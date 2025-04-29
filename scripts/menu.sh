@@ -208,6 +208,8 @@ do_input_setup_h264()
   Radio11=OFF
   Radio12=OFF
   Radio13=OFF
+  Radio14=OFF
+  Radio15=OFF
 
   case "$MODE_INPUT" in
   CAMH264)
@@ -243,16 +245,22 @@ do_input_setup_h264()
   IPTSIN)
     Radio11=ON
   ;;
-  VNC)
+  IPTSIN264)
     Radio12=ON
   ;;
-  *)
+  IPTSIN265)
     Radio13=ON
+  ;;
+  VNC)
+    Radio14=ON
+  ;;
+  *)
+    Radio15=ON
   ;;
   esac
 
   chinput=$(whiptail --title "$StrInputSetupTitle" --radiolist \
-    "$StrInputSetupDescription" 20 78 14 \
+    "$StrInputSetupDescription" 22 78 16 \
     "CAMH264" "$StrInputSetupCAMH264" $Radio1 \
     "ANALOGCAM" "$StrInputSetupANALOGCAM" $Radio2 \
     "WEBCAMH264" "H264 SD USB Webcam, no audio" $Radio3 \
@@ -264,8 +272,10 @@ do_input_setup_h264()
     "TESTMODE" "$StrInputSetupTESTMODE" $Radio9 \
     "FILETS" "$StrInputSetupFILETS" $Radio10\
     "IPTSIN" "$StrInputSetupIPTSIN" $Radio11 \
-    "VNC" "$StrInputSetupVNC" $Radio12 \
-    "OTHER" "MPEG-2 or Widescreen Mode" $Radio13 \
+    "IPTSIN264" "TS, add H264 metadata" $Radio12 \
+    "IPTSIN265" "TS, add H265 metadata" $Radio13 \
+    "VNC" "$StrInputSetupVNC" $Radio14 \
+    "OTHER" "MPEG-2 or Widescreen Mode" $Radio15 \
   3>&2 2>&1 1>&3)
 
   if [ $? -eq 0 ]; then
@@ -345,6 +355,14 @@ do_input_setup_h264()
       set_config_var pathmedia "$PATHTS" $PCONFIGFILE
     ;;
     IPTSIN)
+      CURRENTIP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+      whiptail --title "$StrInputSetupIPTSINTitle" --msgbox "$StrInputSetupIPTSINName""$CURRENTIP" 8 78
+    ;;
+    IPTSIN264)
+      CURRENTIP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
+      whiptail --title "$StrInputSetupIPTSINTitle" --msgbox "$StrInputSetupIPTSINName""$CURRENTIP" 8 78
+    ;;
+    IPTSIN265)
       CURRENTIP=$(ifconfig | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -Eo '([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1')
       whiptail --title "$StrInputSetupIPTSINTitle" --msgbox "$StrInputSetupIPTSINName""$CURRENTIP" 8 78
     ;;

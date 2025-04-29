@@ -12122,17 +12122,17 @@ void *WaitButtonLMRX(void * arg)
         FinishedButton = 2; // graphics off
       }
     }
-    else if((scaledX >= 35 * wscreen / 40) && (scaledY >= 7 * hscreen / 12))  // Top Right
+    else if((scaledX >= 35 * wscreen / 40) && (scaledY >= 8 * hscreen / 12))  // Top Right
     {
       //printf("Volume Up.\n");
       AdjustVLCVolume(51);
     }
-    else if((scaledX >= 35 * wscreen / 40) && (scaledY >= 5 * hscreen / 12) && (scaledY < 7 * hscreen / 12))  // mid Right
+    else if((scaledX >= 35 * wscreen / 40) && (scaledY >= 4 * hscreen / 12) && (scaledY < 8 * hscreen / 12))  // mid Right
     {
       //printf("Volume Mute.\n");
       AdjustVLCVolume(-512);
     }
-    else if((scaledX >= 35 * wscreen / 40) && (scaledY < 5 * hscreen / 12))  // Bottom Right
+    else if((scaledX >= 35 * wscreen / 40) && (scaledY < 4 * hscreen / 12))  // Bottom Right
     {
       //printf("Volume Down.\n");
       AdjustVLCVolume(-51);
@@ -14305,7 +14305,8 @@ void LMRX(int NoButton)
 
             rectangle(wscreen * 1 / 40, hscreen - 1 * linepitch - txtdesc, wscreen * 19 / 40, txttot, 0, 0, 0);
             Text2(wscreen * 1 / 40, hscreen - 1 * linepitch, STATEtext, font_ptr);
-            rectangle(wscreen * 1 / 40, hscreen - 9 * linepitch - txtdesc, 620, 8, 0, 0, 0);
+            rectangle(wscreen * 1 / 40, hscreen - 9 * linepitch - txtdesc, 470, 8, 0, 0, 0);  // line at base of text
+            rectangle(490, hscreen - 9 * linepitch - txtdesc, 160, 230, 0, 0, 0);             // poss 3rd digit
             LargeText2(wscreen * 1 / 40, hscreen - 9 * linepitch, 4, MERtext, &font_dejavu_sans_72);
             Text2(wscreen * 1 / 40, hscreen - 12 * linepitch, "Touch Centre to Exit", font_ptr);
 
