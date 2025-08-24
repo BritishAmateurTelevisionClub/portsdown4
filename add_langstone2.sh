@@ -45,11 +45,6 @@ sudo apt-get -y install raspi-gpio
 sudo apt-get -y install doxygen
 sudo apt-get -y install swig
 
-# Install WiringPi:
-cd /tmp
-wget https://project-downloads.drogon.net/wiringpi-latest.deb
-sudo dpkg -i wiringpi-latest.deb
-cd /home/pi
 
 echo "#################################"
 echo "##        Install gr-limesdr   ##"

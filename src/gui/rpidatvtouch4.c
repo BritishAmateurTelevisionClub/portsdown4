@@ -1300,7 +1300,7 @@ void GetLatestVers(char LatestVersion[256])
 }
 
 /***************************************************************************//**
- * @brief Checks whether a ping to google on 8.8.8.8 works
+ * @brief Checks whether a ping to google on 8.8.4.4 works
  *
  * @param nil
  *
@@ -1313,7 +1313,7 @@ int CheckGoogle()
   char response[127];
 
   /* Open the command for reading. */
-  fp = popen("ping 8.8.8.8 -c1 | head -n 5 | tail -n 1 | grep -o \"1 received,\" | head -c 11", "r");
+  fp = popen("ping 8.8.4.4 -c1 | head -n 5 | tail -n 1 | grep -o \"1 received,\" | head -c 11", "r");
   if (fp == NULL) {
     printf("Failed to run command\n" );
     exit(1);

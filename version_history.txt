@@ -1,3 +1,6 @@
+202508230
+Use new version of WiringPi
+
 202504290
 Enlarge RX mute button
 Tidy large MER Display

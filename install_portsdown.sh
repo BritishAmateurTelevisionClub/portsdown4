@@ -102,9 +102,16 @@ sudo apt-get -y install libzstd-dev                                     # For li
 sudo apt-get -y install arp-scan                                        # For List Network Devices
 
 # Install WiringPi
-cd /tmp
-wget https://project-downloads.drogon.net/wiringpi-latest.deb
-sudo dpkg -i wiringpi-latest.deb
+cd /home/pi
+git clone https://github.com/WiringPi/WiringPi.git
+cd WiringPi
+./build debian
+
+# Read latest WiringPi version number and install it
+vMaj=`cut -d. -f1 VERSION`
+vMin=`cut -d. -f2 VERSION`
+mv debian-template/wiringpi_"$vMaj"."$vMin"_armhf.deb .
+sudo apt install ./wiringpi_"$vMaj"."$vMin"_armhf.deb
 cd /home/pi
 
 # Install libiio for Pluto SigGen (and Langstone)

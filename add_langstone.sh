@@ -46,11 +46,6 @@ sudo apt-get -y install gr-iio
 sudo apt-get -y install gnuradio
 sudo apt-get -y install raspi-gpio
 
-# Install WiringPi:
-cd /tmp
-wget https://project-downloads.drogon.net/wiringpi-latest.deb
-sudo dpkg -i wiringpi-latest.deb
-
 echo
 # Install libiio and dependencies if required (may already be there for Pluto SigGen)
 if [ ! -d  /home/pi/libiio ]; then
