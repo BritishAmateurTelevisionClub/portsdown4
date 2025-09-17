@@ -22,20 +22,36 @@ extern bool app_exit;
 extern char serverip[20];     // Read in from config file in main
 
 
+void transport_close()
+{
+  int err = 0;
+
+  err = close(sockfd);
+  if (err == 0)
+  {
+    printf("Port closed\n");
+  }
+  else
+  {
+    printf("Attempted to close port but failed\n");
+  }
+}
+
+
 int transport_init()
 {
   int err = 0;
-  connection_made = false;
   struct sockaddr_in serv_addr;
 
   // Create socket
   if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
   {
     printf("\n Error : Could not create socket \n");
-    //return;
+    return 1;
   } 
   else  // Socket created
   {
+    printf("Socket created\n");
     memset(&serv_addr, '0', sizeof(serv_addr)); 
 
     serv_addr.sin_family = AF_INET;
@@ -43,41 +59,30 @@ int transport_init()
 
     if(inet_pton(AF_INET, serverip, &serv_addr.sin_addr)<=0)
     {
-        printf("\n inet_pton error occured\n");
-        //return;
+        printf("\n inet_pton (server address conversion) error occured\n");
+        printf("Server address %s failed\n", serverip);
+        return 1;
     } 
-    else   // Server found
+    else   // Server address valid, so connect to it
     {
+      printf("Server address valid format\n");
       if ((err=connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr))) < 0)
       {
-        printf("Error : Connect Failed %i %i ",err,errno);
+        printf("Error : Connect Failed %i %i ", err ,errno);
         printf("connect: %s\n", strerror(errno));
-        //return;
+        return 1;
       } 
       else            // Connected
       {
-        /* make it non blocking */
+        // make it non blocking
+        printf("Changing socket to non-blocking\n");
         fcntl(sockfd, F_SETFL, fcntl(sockfd, F_GETFL) | O_NONBLOCK);
 
         connection_made = true;
         printf("Connection to server established\n");
+        return 0;
       }
     }
-  }
-  
-  // Restart app if no connection and not already exiting
-  //if ((connection_made == false) && (app_exit == false))
-  //{
-  //  usleep(1000000);
-  //  cleanexit(150);
-  //}
-  if (connection_made == true)
-  {
-    return 0;
-  }
-  else
-  {
-    return 1;
   }
 }
 
@@ -86,10 +91,6 @@ int transport_send(unsigned char *data)
 {
   int err = 0;
   int error_count = 0;
-
-//    if (connection_made) {
-//        write(sockfd, data, TCP_DATA_PRE + FFT_BUFFER_SIZE*sizeof(short)*2);
-//    }
 
   do
   {
@@ -109,10 +110,8 @@ int transport_send(unsigned char *data)
 
     if ((error_count > 10) && (app_exit == false))  // errors and not already exiting
     {
-      //usleep(1000000);
-
+      printf("Transport_send error count > 10, returning\n");
       return 1;
-      //cleanexit(150);                  // Restart MeteorViewer after 10 attempts
     }
   }
   while ((err < 0) && (errno == 11));

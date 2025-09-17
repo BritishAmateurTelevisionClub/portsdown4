@@ -1,0 +1,15 @@
+freq=2395000
+socket=a
+call=CALL
+passkey=passkey
+region=eu
+euurl=live.ariss.org
+usurl=live.ariss.org
+jpurl=live.ariss.org
+auurl=live.ariss.org
+testurl=live.ariss.org
+euport=5678
+usport=5678
+jpport=5678
+auport=5678
+testport=6789

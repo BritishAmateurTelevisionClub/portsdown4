@@ -54,6 +54,7 @@ src/sdrplayview/sdrplayview
 src/rydemon/rydemon
 src/muntjac/muntjacsdr_dvb
 src/muntjac/mjcalib
+src/meteorview/restart_counter.txt
 scripts/configs/Langstone.conf
 scripts/configs/Langstone_Lime.conf
 scripts/configs/Langstone_Pluto.conf
@@ -84,7 +85,7 @@ bin/dmm
 bin/wav2lime
 bin/meteorview
 bin/noise_meter
-/bin/pluto_noise_meter
+bin/pluto_noise_meter
 bin/beacon
 bin/server
 bin/sdrplayview

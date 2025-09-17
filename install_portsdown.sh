@@ -100,6 +100,7 @@ sudo apt-get -y install uhubctl                                         # For SD
 sudo apt-get -y install libssl-dev                                      # For websockets
 sudo apt-get -y install libzstd-dev                                     # For libiio 202309040
 sudo apt-get -y install arp-scan                                        # For List Network Devices
+sudo apt-get -y install cppcheck                                        # For HamTV Merger Client
 
 # Install WiringPi
 cd /home/pi
@@ -608,10 +609,26 @@ make
 cp rydemon ../../bin/
 cd /home/pi
 
+# Compile client for HamTV Merger
+echo
+echo "---------------------------------------------"
+echo "----- Compiling Client for HamTV Merger -----"
+echo "---------------------------------------------"
+
+wget https://github.com/ARISS-UK/tsmerge-client-linuxcli/archive/refs/heads/master.zip
+unzip master.zip
+rm master.zip
+mv tsmerge-client-linuxcli-master tsmerge
+cd /home/pi/tsmerge
+make cppcheck && make
+
 #echo
 #echo "-----------------------------------------"
 #echo "----- Compiling Ancilliary programs -----"
 #echo "-----------------------------------------"
+
+
+
 
 
 # Compile and install the executable for GPIO-switched transmission (201710080)

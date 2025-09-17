@@ -7,6 +7,8 @@
 extern unsigned char transmit_buffer[];
 
 void cleanexit(int);
+void GetConfigParam(char *PathConfigFile, char *Param, char *Value);
+void SetConfigParam(char *PathConfigFile, char *Param, char *Value);
 
 #endif /* __METEORVIEW_H__ */
 

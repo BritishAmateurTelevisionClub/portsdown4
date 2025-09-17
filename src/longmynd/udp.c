@@ -151,6 +151,13 @@ static uint8_t udp_init(struct sockaddr_in *servaddr_ptr, int *sockfd_ptr, char 
   
     printf("Flow: UDP Init\n");
 
+    /* If socket already existed then close it */
+    if(*sockfd_ptr > 0)
+    {
+        close(*sockfd_ptr);
+        *sockfd_ptr = 0;
+    }
+
     /* Creat the socket  for IPv4 and UDP */
     if ((*sockfd_ptr = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
         printf("ERROR: socket creation failed\n"); 
@@ -160,7 +167,14 @@ static uint8_t udp_init(struct sockaddr_in *servaddr_ptr, int *sockfd_ptr, char 
         memset(servaddr_ptr, 0, sizeof(struct sockaddr_in)); 
         servaddr_ptr->sin_family = AF_INET; 
         servaddr_ptr->sin_port = htons(udp_port); 
-        servaddr_ptr->sin_addr.s_addr = inet_addr(udp_ip); // INADDR_ANY; 
+        servaddr_ptr->sin_addr.s_addr = inet_addr(udp_ip); // INADDR_ANY;
+
+        if((inet_addr(udp_ip) & 0xFF000000) == 0xFF000000)
+        {
+            printf("Flow: UDP setting broadcast flag\n");
+            uint32_t on = 1;
+            setsockopt(*sockfd_ptr, SOL_SOCKET, SO_BROADCAST, &on, sizeof(on));
+        }
     }
     if (err!=ERROR_NONE) printf("ERROR: UDP init\n");
 

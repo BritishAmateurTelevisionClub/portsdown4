@@ -67,6 +67,7 @@ Rewitten by Dave, G8GKQ
 #define PATH_PB_CONFIG "/home/pi/rpidatv/src/plutoview/plutoview_config.txt"
 #define PATH_SV_CONFIG "/home/pi/rpidatv/src/sdrplayview/sdrplayview_config.txt"
 #define PATH_TC_CONFIG "/home/pi/rpidatv/scripts/images/testcard_config.txt"
+#define PATH_HAMTV_CONFIG "/home/pi/rpidatv/scripts/merger_config.txt"
 
 #define PI 3.14159265358979323846
 #define deg2rad(DEG) ((DEG)*((PI)/(180.0)))
@@ -107,7 +108,7 @@ color_t Grey  = {.r = 127, .g = 127, .b = 127};
 color_t Red   = {.r = 255, .g = 0  , .b = 0  };
 color_t Black = {.r = 0  , .g = 0  , .b = 0  };
 
-#define MAX_BUTTON 690
+#define MAX_BUTTON 800
 int IndexButtonInArray=0;
 button_t ButtonArray[MAX_BUTTON];
 #define TIME_ANTI_BOUNCE 500
@@ -384,6 +385,24 @@ int mouse_y;                           // click y 0 - 479 from top
 bool image_complete = true;            // prevents mouse image buffer from being copied until image is complete
 bool mouse_connected = false;          // Set true if mouse detected at startup
 
+// HamTV Merger
+int htFreq;                            // Tuner freq in integer kHz
+char htSocket[2];                      // Tuner socket, a or b
+char htCall[31];                       // Call (in caps) for logging on to merger
+char htPasskey[31];                    // Passkey for logging on to merger
+char htRegion[7];                      // Merger region: eu, us, jp or au
+char htEUurl[63];                      // server url for merger region
+char htUSurl[63];                      // server url for merger region
+char htJPurl[63];                      // server url for merger region
+char htAUurl[63];                      // server url for merger region
+char htTESTurl[63];                    // server url for merger region
+char htEUport[63];                     // server port for merger region
+char htUSport[63];                     // server port for merger region
+char htJPport[63];                     // server port for merger region
+char htAUport[63];                     // server port for merger region
+char htTESTport[63];                   // server port for merger region
+bool MergerConnected = false;          // true when connected
+
 
 // Threads for Touchscreen monitoring
 
@@ -443,6 +462,7 @@ void ReadCallLocPID();
 void ReadLangstone();
 void ReadTSConfig();
 void ReadADFRef();
+void ReadMerger();
 void GetSerNo(char SerNo[256]);
 int CalcTSBitrate();
 void GetDevices(char DeviceName1[256], char DeviceName2[256]);
@@ -623,6 +643,9 @@ void SeparateStreamKey(char streamkey[127], char streamname[63], char key[63]);
 void AmendStreamerPreset(int NoButton);
 void checkTunerSettings();
 void LMRX(int NoButton);
+void RXMerger();
+void ConnectMerger();
+int CheckMergerRunning();
 void CycleLNBVolts();
 void wait_touch();
 void MsgBox(char *message);
@@ -681,6 +704,7 @@ void ChangeLKVPort();
 void ChangeJetsonUser();
 void ChangeJetsonPW();
 void ChangeJetsonRPW();
+void ChangeHamTV(int NoButton);
 void waituntil(int w,int h);
 void Define_Menu1();
 void Start_Highlights_Menu1();
@@ -775,6 +799,8 @@ void Define_Menu46();
 void Start_Highlights_Menu46();
 void Define_Menu47();
 void Start_Highlights_Menu47();
+void Define_Menu48();
+void Start_Highlights_Menu48();
 void Define_Menu41();
 
 // **************************************************************************** //
@@ -2821,6 +2847,96 @@ void ReadADFRef()
   GetConfigParam(PATH_SGCONFIG, Param, Value);
   strcpy(ADF5355Ref, Value);
 }
+
+
+/***************************************************************************//**
+ * @brief Reads the HamTV merger parameters from merger_config.txt
+ *        
+ * @param nil
+ *
+ * @return void
+*******************************************************************************/
+void ReadMerger()
+{
+  char Param[31];
+  char Value[255]="";
+
+  strcpy(Value, "2395000");
+  strcpy(Param, "freq");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  htFreq = atoi(Value);
+
+  strcpy(Value, "a");
+  strcpy(Param, "socket");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htSocket, Value);
+
+  strcpy(Value, "CALL");
+  strcpy(Param, "call");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htCall, Value);
+
+  strcpy(Value, "passkey");
+  strcpy(Param, "passkey");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htPasskey, Value);
+
+  strcpy(Value, "eu");
+  strcpy(Param, "region");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htRegion, Value);
+
+  strcpy(Value, "live.ariss.org");
+  strcpy(Param, "euurl");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htEUurl, Value);
+
+  strcpy(Value, "live.ariss.org");
+  strcpy(Param, "usurl");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htUSurl, Value);
+
+  strcpy(Value, "live.ariss.org");
+  strcpy(Param, "jpurl");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htJPurl, Value);
+
+  strcpy(Value, "live.ariss.org");
+  strcpy(Param, "auurl");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htAUurl, Value);
+
+  strcpy(Value, "live.ariss.org");
+  strcpy(Param, "testurl");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htTESTurl, Value);
+
+  strcpy(Value, "5678");
+  strcpy(Param, "euport");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htEUport, Value);
+
+  strcpy(Value, "5678");
+  strcpy(Param, "usport");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htUSport, Value);
+
+  strcpy(Value, "5678");
+  strcpy(Param, "jpport");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htJPport, Value);
+
+  strcpy(Value, "5678");
+  strcpy(Param, "auport");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htAUport, Value);
+
+  strcpy(Value, "6789");
+  strcpy(Param, "testport");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htTESTport, Value);
+}
+
 
 /***************************************************************************//**
  * @brief Looks up the SD Card Serial Number
@@ -7046,7 +7162,7 @@ int InitialiseButtons()
 
 int ButtonNumber(int MenuIndex, int Button)
 {
-  // Returns the Button Number (0 - 689) from the Menu number and the button position
+  // Returns the Button Number (0 - 794) from the Menu number and the button position
   int ButtonNumb = 0;
 
   if (MenuIndex <= 10)  // 10 x 25-button main menus
@@ -7061,7 +7177,7 @@ int ButtonNumber(int MenuIndex, int Button)
   {
     ButtonNumb = 550 + (MenuIndex - 41) * 50 + Button;
   }
-  if (MenuIndex >= 42)  // 6 x 15-button submenus
+  if (MenuIndex >= 42)  // 7 x 15-button submenus
   {
     ButtonNumb = 600 + (MenuIndex - 42) * 15 + Button;
   }
@@ -7957,7 +8073,7 @@ void UpdateWindow()
     rectangle(10, 12, wscreen - 18, hscreen * 2 / 6 + 12, 127, 127, 127);
   }
 
-  if ((CurrentMenu >= 42) && (CurrentMenu <= 47))  // 15-button menus
+  if ((CurrentMenu >= 42) && (CurrentMenu <= 48))  // 15-button menus
   {
     rectangle(10, 12, wscreen - 18, hscreen * 3 / 6 + 12, 127, 127, 127);
   }
@@ -14499,6 +14615,521 @@ void LMRX(int NoButton)
   pthread_join(thbutton, NULL);
 }
 
+
+void RXMerger()
+{
+  if (MergerConnected == false)                          // not connected, so warn
+  {
+    MsgBox4("Warning", "Not Connected to the Merger", " ", "Touch screen to Continue");
+    wait_touch();
+  }
+
+  #define PATH_SCRIPT_LMRXVLCMERGER "/home/pi/rpidatv/scripts/lmvlcmerger.sh"
+
+  //Local parameters:
+
+  FILE *fp;
+  int num;
+  int ret;
+  int fd_status_fifo;
+  float MER;
+  float FREQ;
+  int STATE = 0;
+  int SR;
+  bool Overlay_displayed = false;
+  char status_message_char[14];
+  char stat_string[255];
+  char MERtext[63];
+  char STATEtext[63];
+  char FREQtext[63];
+  char SRtext[63];
+  char ServiceProvidertext[255] = " ";
+  char Servicetext[255] = " ";
+  char FECtext[63] = " ";
+  char Modulationtext[63] = " ";
+  char Encodingtext[63] = " ";
+  char vlctext[255];
+  char AGCtext[255];
+  char AGC1text[255];
+  char AGC2text[255];
+  uint16_t AGC1 = 0;
+  uint16_t AGC2 = 3200;
+  float MERThreshold = 0;
+  int Parameters_currently_displayed = 1;  // 1 for displayed, 0 for blank
+  float previousMER = 0;
+  int FirstLock = 0;  // set to 1 on first lock, and 2 after parameter fade
+  clock_t LockTime;
+  bool webupdate_this_time = true;   // Only update web on alternate MER changes
+  char LastServiceProvidertext[255] = " ";
+  bool FirstReceive = true;
+  char TIMEtext[63];
+  uint16_t TunerPollCount = 0;
+  bool TunerFound = FALSE;
+  char ExtraText[63];
+
+  // Set globals
+  FinishedButton = 1;
+  VLCResetRequest = false;
+
+  // Display the correct background
+
+  strcpy(LinuxCommand, "sudo fbi -T 1 -noverbose -a /home/pi/rpidatv/scripts/images/RX_overlay.png ");
+  Overlay_displayed = true;
+  strcat(LinuxCommand, ">/dev/null 2>/dev/null");
+  system(LinuxCommand);
+  strcpy(LinuxCommand, "(sleep 1; sudo killall -9 fbi >/dev/null 2>/dev/null) &");
+  system(LinuxCommand);
+  refreshMouseBackground();
+  draw_cursor_foreground(mouse_x, mouse_y);
+  UpdateWeb();
+
+  // Initialise and calculate the text display
+  setForeColour(255, 255, 255);    // White text
+  setBackColour(0, 0, 0);          // on Black
+  const font_t *font_ptr = &font_dejavu_sans_28;
+  int txtht =  font_ptr->ascent;
+  int txttot =  font_ptr->height;
+  int txtdesc = font_ptr->height - font_ptr->ascent;
+  int linepitch = (14 * txtht) / 10;
+  char line5[127] = "";
+
+  // Create Wait Button thread
+  pthread_create (&thbutton, NULL, &WaitButtonLMRX, NULL);
+
+  fp=popen(PATH_SCRIPT_LMRXVLCMERGER, "r");
+
+  if(fp==NULL) printf("Process error\n");
+
+  printf("STARTING VLC with FFMPEG RX for|Merger\n");
+
+    /* Open status FIFO for read only  */
+    ret = mkfifo("longmynd_status_fifo", 0666);
+    fd_status_fifo = open("longmynd_status_fifo", O_RDONLY); 
+
+    // Set the status fifo to be non-blocking on empty reads
+    fcntl(fd_status_fifo, F_SETFL, O_NONBLOCK);
+
+    if (fd_status_fifo < 0)
+    {
+      printf("Failed to open status fifo\n");
+    }
+    printf("Listening, ret = %d\n", ret);
+
+    while ((FinishedButton == 1) || (FinishedButton == 2)) // 1 is captions on, 2 is off
+    {
+      if (VLCResetRequest == true)
+      {
+        system("/home/pi/rpidatv/scripts/lmvlcreset.sh &");
+        VLCResetRequest = false;
+        FirstLock = 2;
+        FinishedButton = 1;
+      }
+
+      num = read(fd_status_fifo, status_message_char, 1);
+
+      if (num < 0)  // no character to read
+      {
+        usleep(500);
+        if (TunerFound == FALSE)
+        {
+          TunerPollCount = TunerPollCount + 1;
+
+          if (TunerPollCount == 15)  // Tuner not responding
+          {
+            strcpy(line5, "Waiting for Tuner to Respond");
+            Text2(wscreen * 6 / 40, hscreen - 1 * linepitch, line5, font_ptr);
+          }       
+          // printf("TPC = %d\n", TunerPollCount);
+          if (TunerPollCount > 2500)  // Maybe PicoTuner has locked up so reset USB bus power
+          {
+            strcpy(line5, "Resetting USB Bus                            ");
+            Text2(wscreen * 6 / 40, hscreen - 1 * linepitch, line5, font_ptr);
+            system("sudo killall vlc");
+            system("sudo uhubctl -R -a 2");
+            MsgBox("Touch Centre of Screen to Return to Receiver");
+          }
+        }
+      }
+      else // there was a character to read
+      {
+        status_message_char[num]='\0';
+        // if (num>0) printf("%s\n",status_message_char);
+        
+        if (strcmp(status_message_char, "$") == 0)
+        {
+          TunerFound = TRUE;
+
+          if (Overlay_displayed == true)
+          {
+            clearScreen();
+            Overlay_displayed = false;
+          }
+
+          if ((stat_string[0] == '1') && (stat_string[1] == ','))  // Decoder State
+          {
+            // Return State as an integer and a string
+            STATE = LMDecoderState(stat_string, STATEtext);
+          }
+
+          if ((stat_string[0] == '6') && (stat_string[1] == ','))  // Frequency
+          {
+            strcpy(FREQtext, stat_string);
+            chopN(FREQtext, 2);
+            FREQ = atof(FREQtext);
+            if (strcmp(LMRXmode, "sat") == 0)
+            {
+              FREQ = FREQ + LMRXqoffset;
+            }
+            FREQ = FREQ / 1000;
+            snprintf(FREQtext, 15, "%.3f MHz", FREQ);
+            if ((TabBandLO[CurrentBand] < -0.5) || (TabBandLO[CurrentBand] > 0.5))      // band not direct
+            {
+              strcat(FREQtext, " ");
+              strcat(FREQtext, TabBandLabel[CurrentBand]);                             // so add band label
+            }
+          }
+
+          if ((stat_string[0] == '9') && (stat_string[1] == ','))  // SR in S
+          {
+            strcpy(SRtext, stat_string);
+            chopN(SRtext, 2);
+            SR = atoi(SRtext) / 1000;
+            snprintf(SRtext, 15, "%d kS", SR);
+          }
+
+          if ((stat_string[0] == '1') && (stat_string[1] == '3'))  // Service Provider
+          {
+            strcpy(ServiceProvidertext, stat_string);
+            chopN(ServiceProvidertext, 3);
+
+            // Force VLC reset if service provider has changed
+            if ((strlen(ServiceProvidertext) > 1) && (strlen(LastServiceProvidertext) > 1))
+            {
+              if (strcmp(ServiceProvidertext, LastServiceProvidertext) != 0)  // Service provider has changed
+              {
+                system("/home/pi/rpidatv/scripts/lmvlcreset.sh &");           // so reset VLC
+                strcpy(LastServiceProvidertext, ServiceProvidertext);
+              }
+            }
+
+            // deal with first receive case (no reset required)
+            if ((FirstReceive == true) && (strlen(ServiceProvidertext) > 1))
+            {
+              strcpy(LastServiceProvidertext, ServiceProvidertext);
+              FirstReceive = false;
+            }
+          }
+
+          if ((stat_string[0] == '1') && (stat_string[1] == '4'))  // Service
+          {
+            strcpy(Servicetext, stat_string);
+            chopN(Servicetext, 3);
+          }
+
+          if ((stat_string[0] == '1') && (stat_string[1] == '8'))  // MODCOD
+          {
+            MERThreshold = LMLookupMODCOD(stat_string, STATE, FECtext, Modulationtext);
+          }
+
+          if ((stat_string[0] == '1') && (stat_string[1] == '7'))  // Video and audio encoding
+          {
+            if (LMLookupVidEncoding(stat_string, ExtraText) == 0)
+            {
+              strcpy(Encodingtext, ExtraText);
+            }
+            strcpy(ExtraText, "");
+
+            if (LMLookupAudEncoding(stat_string, ExtraText) == 0)
+            {
+              strcat(Encodingtext, ExtraText);
+            }
+          }
+
+          if ((stat_string[0] == '2') && (stat_string[1] == '6'))  // AGC1 Setting
+          {
+            strcpy(AGC1text, stat_string);
+            chopN(AGC1text, 3);
+            AGC1 = atoi(AGC1text);
+          }
+
+          if ((stat_string[0] == '2') && (stat_string[1] == '7'))  // AGC2 Setting
+          {
+            strcpy(AGC2text, stat_string);
+            chopN(AGC2text, 3);
+            AGC2 = atoi(AGC2text);
+          }
+
+          if ((stat_string[0] == '1') && (stat_string[1] == '2'))  // MER
+          {
+            if (FinishedButton == 1)  // Parameters requested to be displayed
+            {
+
+              // If they weren't displayed before, set the previousMER to 0 
+              // so they get displayed and don't have to wait for an MER change
+              if (Parameters_currently_displayed != 1)
+              {
+                previousMER = 0;
+              }
+              Parameters_currently_displayed = 1;
+              strcpy(MERtext, stat_string);
+              chopN(MERtext, 3);
+              MER = atof(MERtext)/10;
+              if (MER > 51)  // Trap spurious MER readings
+              {
+                MER = 0;
+              }
+              snprintf(MERtext, 24, "MER %.1f (%.1f needed)", MER, MERThreshold);
+              snprintf(AGCtext, 24, "RF Input Level %d dB", CalcInputPwr(AGC1, AGC2));
+
+              rectangle(wscreen * 1 / 40, hscreen - 1 * linepitch - txtdesc, wscreen * 30 / 40, txttot, 0, 0, 0);
+              Text2(wscreen * 1 / 40, hscreen - 1 * linepitch, STATEtext, font_ptr);
+              rectangle(wscreen * 1 / 40, hscreen - 2 * linepitch - txtdesc, wscreen * 19 / 40, txttot, 0, 0, 0);
+              Text2(wscreen * 1 / 40, hscreen - 2 * linepitch, FREQtext, font_ptr);
+              rectangle(wscreen * 1 / 40, hscreen - 3 * linepitch - txtdesc, wscreen * 19 / 40, txttot, 0, 0, 0);
+              Text2(wscreen * 1 / 40, hscreen - 3 * linepitch, SRtext, font_ptr);
+              rectangle(wscreen * 1 / 40, hscreen - 4 * linepitch - txtdesc, wscreen * 19 / 40, txttot, 0, 0, 0);
+              Text2(wscreen * 1 / 40, hscreen - 4 * linepitch, Modulationtext, font_ptr);
+              rectangle(wscreen * 1 / 40, hscreen - 5 * linepitch - txtdesc, wscreen * 19 / 40, txttot, 0, 0, 0);
+              Text2(wscreen * 1 / 40, hscreen - 5 * linepitch, FECtext, font_ptr);
+              rectangle(wscreen * 1 / 40, hscreen - 6 * linepitch - txtdesc, wscreen * 19 / 40, txttot, 0, 0, 0);
+              Text2(wscreen * 1 / 40, hscreen - 6 * linepitch, ServiceProvidertext, font_ptr);
+              rectangle(wscreen * 1 / 40, hscreen - 7 * linepitch - txtdesc, wscreen * 19 / 40, txttot, 0, 0, 0);
+              Text2(wscreen * 1 / 40, hscreen - 7 * linepitch, Servicetext, font_ptr);
+              rectangle(wscreen * 1 / 40, hscreen - 8 * linepitch - txtdesc, wscreen * 19 / 40, txttot, 0, 0, 0);
+              Text2(wscreen * 1 / 40, hscreen - 8 * linepitch, Encodingtext, font_ptr);
+              if (AGC1 < 1)  // Low input level
+              {
+                setForeColour(255, 63, 63); // Set foreground colour to red
+              }
+              rectangle(wscreen * 1 / 40, hscreen - 10 * linepitch - txtdesc, wscreen * 19 / 40, txttot, 0, 0, 0);
+              Text2(wscreen * 1 / 40, hscreen - 10 * linepitch, AGCtext, font_ptr);
+              setForeColour(255, 255, 255);  // Set foreground colour to white
+
+              if (MER < MERThreshold + 0.1)
+              {
+                setForeColour(255, 63, 63); // Set foreground colour to red
+              }
+              else  // Auto-hide the parameter display after 5 seconds
+              {
+                if (FirstLock == 0) // This is the first time MER has exceeded threshold
+                {
+                  FirstLock = 1;
+                  LockTime = clock();  // Set first lock time
+                }
+                if ((clock() > LockTime + 600000) && (FirstLock == 1))  // About 5s since first lock
+                {
+                  FinishedButton = 2; // Hide parameters
+                  FirstLock = 2;      // and stop it trying to hide them again
+                }
+              }
+
+              rectangle(wscreen * 1 / 40, hscreen - 9 * linepitch - txtdesc, wscreen * 19 / 40, txttot, 0, 0, 0);
+              Text2(wscreen * 1 / 40, hscreen - 9 * linepitch, MERtext, font_ptr);
+              setForeColour(255, 255, 255);  // Set foreground colour to white
+
+              // Only change VLC overlayfile if MER has changed
+              if (MER != previousMER)
+              {
+
+                // Strip trailing line feeds from text strings
+                ServiceProvidertext[strlen(ServiceProvidertext) - 1] = '\0';
+                Servicetext[strlen(Servicetext) - 1] = '\0';
+
+                // Build string for VLC
+                strcpy(vlctext, STATEtext);
+                strcat(vlctext, "%n");
+                strcat(vlctext, FREQtext);
+                strcat(vlctext, "%n");
+                strcat(vlctext, SRtext);
+                strcat(vlctext, "%n");
+                strcat(vlctext, Modulationtext);
+                strcat(vlctext, "%n");
+                strcat(vlctext, FECtext);
+                strcat(vlctext, "%n");
+                strcat(vlctext, ServiceProvidertext);
+                strcat(vlctext, "%n");
+                strcat(vlctext, Servicetext);
+                strcat(vlctext, "%n");
+                strcat(vlctext, Encodingtext);
+                strcat(vlctext, "%n");
+                strcat(vlctext, MERtext);
+                strcat(vlctext, "%n");
+                strcat(vlctext, AGCtext);
+                strcat(vlctext, "%n");
+                if (timeOverlay == true)
+                {
+                  // Retrieve the current time
+                  t = time(NULL);
+                  strftime(TIMEtext, sizeof(TIMEtext), "%H:%M %d %b %Y", gmtime(&t));
+                  strcat(vlctext, TIMEtext);
+                }
+                else
+                {
+                  strcat(vlctext, ".");
+                }
+                strcat(vlctext, "%nTouch Left to Hide Overlay%nTouch Centre to Exit");
+
+                FILE *fw=fopen("/home/pi/tmp/vlc_temp_overlay.txt","w+");
+                if(fw!=0)
+                {
+                  fprintf(fw, "%s\n", vlctext);
+                }
+                fclose(fw);
+
+                // Copy temp file to file to be read by VLC to prevent file collisions
+                system("cp /home/pi/tmp/vlc_temp_overlay.txt /home/pi/tmp/vlc_overlay.txt");
+
+                previousMER = MER;
+              }
+
+              Text2(wscreen * 1 / 40, hscreen - 11 * linepitch, "Touch Centre to exit", font_ptr);
+              Text2(wscreen * 1 / 40, hscreen - 12 * linepitch, "Touch Lower left for image capture", font_ptr);
+            
+            }
+            else
+            {
+              if (Parameters_currently_displayed == 1)
+              {
+                setBackColour(0, 0, 0);
+                clearScreen();
+                Parameters_currently_displayed = 0;
+
+                FILE *fw=fopen("/home/pi/tmp/vlc_overlay.txt","w+");
+                if(fw!=0)
+                {
+                  fprintf(fw, " ");
+                }
+                fclose(fw);
+              }
+            }
+            // Update web on alternate MER changes (to reduce processor workload)
+            if (webupdate_this_time == true)
+            {
+              refreshMouseBackground();
+              draw_cursor_foreground(mouse_x, mouse_y);
+              UpdateWeb();
+              webupdate_this_time = false;
+            }
+            else
+          {
+            webupdate_this_time = true;
+          }
+        }
+        stat_string[0] = '\0';
+      }
+      else
+      {
+        strcat(stat_string, status_message_char);
+      }
+    }
+  }
+
+  close(fd_status_fifo); 
+  usleep(1000);
+  pclose(fp);
+  touch_response = 0; 
+  system("sudo killall nc >/dev/null 2>/dev/null & ");
+}
+
+
+void ConnectMerger()
+{
+  char mergerURL[63];
+  char mergerPORT[63];
+  char systemCommand[255];
+
+  if (MergerConnected == false)                          // not connected, so connect
+  {
+    if (strcmp(htRegion, "us") == 0)                     // Look-up Server URL
+    {
+      strcpy(mergerURL, htUSurl);
+    }
+    else if (strcmp(htRegion, "jp") == 0)
+    {
+      strcpy(mergerURL, htJPurl);
+    }
+    else if (strcmp(htRegion, "au") == 0)
+    {
+      strcpy(mergerURL, htAUurl);
+    }
+    else if (strcmp(htRegion, "test") == 0)
+    {
+      strcpy(mergerURL, htTESTurl);
+    }
+    else
+    {
+      strcpy(mergerURL, htEUurl);
+    }
+
+    if (strcmp(htRegion, "us") == 0)                     // Look-up Server Port
+    {
+      strcpy(mergerPORT, htUSport);
+    }
+    else if (strcmp(htRegion, "jp") == 0)
+    {
+      strcpy(mergerPORT, htJPport);
+    }
+    else if (strcmp(htRegion, "au") == 0)
+    {
+      strcpy(mergerPORT, htAUport);
+    }
+    else if (strcmp(htRegion, "test") == 0)
+    {
+      strcpy(mergerPORT, htTESTport);
+    }
+    else
+    {
+      strcpy(mergerPORT, htEUport);
+    }
+
+    snprintf(systemCommand, 254, "/home/pi/tsmerge/tsmerge-client-linuxcli -c %s -k %s -h %s -p %s&", htCall, htPasskey, mergerURL, mergerPORT);
+
+    printf("Merger called with -%s-\n", systemCommand);
+
+    system(systemCommand);
+    MergerConnected = true;
+  }
+  else  // Currently connected, so disconnect
+  {
+    system ("sudo killall tsmerge-client-linuxcli");
+    MergerConnected = false;
+  }
+}
+
+
+/***************************************************************************//**
+ * @brief Checks whether the Merger Client is Running
+ *
+ * @param 
+ *
+ * @return 0 if running, 1 if not running
+*******************************************************************************/
+
+int CheckMergerRunning()
+{
+  FILE *fp;
+  char response[255];
+  int responseint;
+
+  /* Open the command for reading. */
+  fp = popen("pgrep 'tsmerge-client' >/dev/null 2>/dev/null ; echo $?", "r");
+  if (fp == NULL) {
+    printf("Failed to run command\n" );
+    exit(1);
+  }
+
+  /* Read the output a line at a time - output it. */
+  while (fgets(response, 7, fp) != NULL)
+  {
+    responseint = atoi(response);
+  }
+
+  /* close */
+  pclose(fp);
+  return responseint;
+}
+
+
 void CycleLNBVolts()
 {
   if (strcmp(LMRXvolts, "h") == 0)
@@ -18298,6 +18929,103 @@ void ChangeJetsonRPW()
 }
 
 
+void ChangeHamTV(int NoButton)
+{
+  char tempRegion[31];
+  bool IsValid = false;
+  char RequestText[63];
+  char InitText[63];
+
+  switch (NoButton)
+  {
+  case 10:                                            // Set frequency
+    while (IsValid == false)
+    {
+      strcpy(RequestText, "Enter the Tuner Frequency (kHz) for the HamTV Merger");
+      snprintf(InitText, 31, "%d", htFreq);
+      Keyboard(RequestText, InitText, 20);
+  
+      if((atoi(KeyboardReturn) >= 144000) && (atoi(KeyboardReturn) <= 2450000))
+      {
+        IsValid = true;
+      }
+    }
+    printf("HamTV Tuner Frequency set to: %s\n", KeyboardReturn);
+    htFreq = atoi(KeyboardReturn);
+    SetConfigParam(PATH_HAMTV_CONFIG, "freq", KeyboardReturn);
+    break;
+  case 11:                                            // Toggle input socket
+    if (strcmp(htSocket, "a") == 0)
+    {
+      strcpy(htSocket, "b");
+    }
+    else
+    {
+      strcpy(htSocket, "a");
+    }
+    SetConfigParam(PATH_HAMTV_CONFIG, "socket", htSocket);
+    break;
+  case 5:                                             // Set Call
+    while (IsValid == false)
+    {
+      strcpy(RequestText, "Enter the Callsign for the HamTV Merger");
+      snprintf(InitText, 31, "%s", htCall);
+      Keyboard(RequestText, InitText, 20);
+  
+      if(strlen(KeyboardReturn) > 0)
+      {
+        IsValid = true;
+      }
+    }
+    printf("HamTV Merger Call set to: %s\n", KeyboardReturn);
+    strcpy(htCall, KeyboardReturn);
+    SetConfigParam(PATH_HAMTV_CONFIG, "call", htCall);
+    break;
+  case 6:                                             // Set Passkey
+    while (IsValid == false)
+    {
+      strcpy(RequestText, "Enter the Passkey for the HamTV Merger");
+      snprintf(InitText, 31, "%s", htPasskey);
+      Keyboard(RequestText, InitText, 20);
+  
+      if(strlen(KeyboardReturn) > 0)
+      {
+        IsValid = true;
+      }
+    }
+    printf("HamTV Merger Passkey set to: %s\n", KeyboardReturn);
+    strcpy(htPasskey, KeyboardReturn);
+    SetConfigParam(PATH_HAMTV_CONFIG, "passkey", htPasskey);
+    break;
+  case 7:                                             // Cycle through Regions
+    if (strcmp(htRegion, "eu") == 0)
+    {
+      strcpy(tempRegion, "us");
+    }
+    else if (strcmp(htRegion, "us") == 0)
+    {
+      strcpy(tempRegion, "jp");
+    }
+    else if (strcmp(htRegion, "jp") == 0)
+    {
+      strcpy(tempRegion, "au");
+    }
+    else if (strcmp(htRegion, "au") == 0)
+    {
+      strcpy(tempRegion, "test");
+    }
+    else
+    {
+      strcpy(tempRegion, "eu");
+    }
+    strcpy(htRegion, tempRegion);
+
+    SetConfigParam(PATH_HAMTV_CONFIG, "region", htRegion);
+    break;
+  }
+}
+
+
 void waituntil(int w,int h)
 {
   // Wait for a screen touch and act on its position
@@ -18997,7 +19725,13 @@ void waituntil(int w,int h)
           Start_Highlights_Menu40();
           UpdateWindow();
           break;
-        case 4:                              // 
+        case 4:                              // HamTV Merger Client Menu
+          printf("MENU 48 \n"); 
+          CurrentMenu=48;
+          setBackColour(0, 0, 0);
+          clearScreen();
+          Start_Highlights_Menu48();
+          UpdateWindow();
           break;
         case 5:                              // Lime Config
           printf("MENU 37 \n"); 
@@ -22265,6 +22999,58 @@ void waituntil(int w,int h)
         continue;   // Completed Menu 47 action, go and wait for touch
       }
 
+      if (CurrentMenu == 48)  // Menu 48 Test Card Selection Menu
+      {
+        printf("Button Event %d, Entering Menu 48 Case Statement\n",i);
+        CallingMenu = 48;
+        switch (i)
+        {
+        case 0:                                         // Connect to Merger
+          ConnectMerger();
+          Start_Highlights_Menu48();
+          UpdateWindow();
+          usleep(500000);
+          if (CheckMergerRunning() == 1)    // Merger has failed to connect
+          {
+            MergerConnected = false;
+            Start_Highlights_Menu48();
+            UpdateWindow();
+          }
+          break;
+        case 1:                                         // Receive
+          RXMerger();
+          Start_Highlights_Menu48();
+          UpdateWindow();
+          break;
+        case 4:                                         // Cancel
+          SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 1);
+          printf("Menu 48 Cancel\n");
+          Start_Highlights_Menu48();  // Update Menu appearance
+          UpdateWindow();             // and display for half a second
+          usleep(500000);
+          SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 0); // Reset cancel (even if not selected)
+          printf("Returning to MENU 1 from Menu 48\n");
+          CurrentMenu = 1;
+          setBackColour(255, 255, 255);
+          clearScreen();
+          Start_Highlights_Menu1();
+          UpdateWindow();
+          break;
+        case 5:                                         // Change Call
+        case 6:                                         // Change Passkey
+        case 7:                                         // Cycle through Regions
+        case 10:                                        // Change Freq
+        case 11:                                        // Toggle Tuner input
+          ChangeHamTV(i);
+          Start_Highlights_Menu48();
+          UpdateWindow();
+          break;
+        default:
+          printf("Menu 48 Error\n");
+        }
+        continue;   // Completed Menu 48 action, go and wait for touch
+      }
+
 
       if (CurrentMenu == 41)  // Menu 41 Keyboard (should not get here)
       {
@@ -22956,6 +23742,9 @@ void Define_Menu3()
 
   button = CreateButton(3, 3);
   AddButtonStatus(button, "TS IP^Config", &Blue);
+
+  button = CreateButton(3, 4);
+  AddButtonStatus(button, "ISS HamTV^RX Merger", &Blue);
 
   // 2nd line up Menu 3: Lime Config 
 
@@ -27760,6 +28549,115 @@ void Start_Highlights_Menu47()
   }
 }
 
+
+void Define_Menu48()
+{
+  int button;
+
+  strcpy(MenuTitle[48], "HamTV Merger Client RX Menu (48)");
+
+  button = CreateButton(48, 0);
+  AddButtonStatus(button, "Connect^to Merger", &Blue);
+  AddButtonStatus(button, "Connected^to Merger ", &Green);
+
+  button = CreateButton(48, 1);
+  AddButtonStatus(button, "RX", &Blue);
+
+  button = CreateButton(48, 4);
+  AddButtonStatus(button, "Exit", &DBlue);
+  AddButtonStatus(button, "Exit", &LBlue);
+
+  button = CreateButton(48, 5);
+  AddButtonStatus(button, "Call^ ", &Blue);
+
+  button = CreateButton(48, 6);
+  AddButtonStatus(button, "Passkey^ ", &Blue);
+
+  button = CreateButton(48, 7);
+  AddButtonStatus(button, "Region^ ", &Blue);
+
+  button = CreateButton(48, 10);
+  AddButtonStatus(button, "Freq^ ", &Blue);
+
+  button = CreateButton(48, 11);
+  AddButtonStatus(button, "Input^ ", &Blue);
+}
+
+
+void Start_Highlights_Menu48()
+{
+  char Freqtext[63];
+  char Calltext[63];
+
+  if (CheckMergerRunning() == 0)
+  {
+    MergerConnected = true;
+  }
+
+  if (MergerConnected == true)
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 0), 1);
+  }
+  else
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0);
+  }
+
+  snprintf(Freqtext, 50, "Freq^%0.1f MHz", (float)(htFreq)/1000.0);
+  AmendButtonStatus(ButtonNumber(48, 10), 0, Freqtext, &Blue);
+
+  if (strcmp(htSocket, "a") == 0)
+  {
+    AmendButtonStatus(ButtonNumber(48, 11), 0, "Input A^ (top)", &Blue);
+  }
+  else if (strcmp(htSocket, "b") == 0)
+  {
+    AmendButtonStatus(ButtonNumber(48, 11), 0, "Input B^ (bottom)", &Blue);
+  }
+  else
+  {
+    AmendButtonStatus(ButtonNumber(48, 11), 0, "Input^Not Set", &Blue);
+  }
+
+  snprintf(Calltext, 50, "Call^%s", htCall);
+  AmendButtonStatus(ButtonNumber(48, 5), 0, Calltext, &Blue);
+
+  if((strcmp(htPasskey, "passkey") != 0) && (strlen(htPasskey) > 4))
+  {
+    AmendButtonStatus(ButtonNumber(48, 6), 0, "Passkey^Set", &Blue);
+  }
+  else
+  {
+    AmendButtonStatus(ButtonNumber(48, 6), 0, "Passkey^Not Set", &Blue);
+  }
+
+  if(strcmp(htRegion, "eu") == 0)
+  {
+    AmendButtonStatus(ButtonNumber(48, 7), 0, "Region^Europe", &Blue);
+  }
+  else if(strcmp(htRegion, "us") == 0)
+  {
+    AmendButtonStatus(ButtonNumber(48, 7), 0, "Region^America", &Blue);
+  }
+  else if(strcmp(htRegion, "jp") == 0)
+  {
+    AmendButtonStatus(ButtonNumber(48, 7), 0, "Region^Asia", &Blue);
+  }
+  else if(strcmp(htRegion, "au") == 0)
+  {
+    AmendButtonStatus(ButtonNumber(48, 7), 0, "Region^Australia", &Blue);
+  }
+  else if(strcmp(htRegion, "test") == 0)
+  {
+    AmendButtonStatus(ButtonNumber(48, 7), 0, "Region^Test", &Blue);
+  }
+  else
+  {
+    AmendButtonStatus(ButtonNumber(48, 7), 0, "Region^Undefined", &Blue);
+  }
+}
+
+
 void Define_Menu41()
 {
   int button;
@@ -28203,6 +29101,7 @@ int main(int argc, char **argv)
   ReadContestSites();
   ReadVLCVolume();
   ReadWebControl();  // this starts the web listener thread if required
+  ReadMerger();
 
   SetAudioLevels();
 
@@ -28257,6 +29156,7 @@ int main(int argc, char **argv)
   Define_Menu45();
   Define_Menu46();
   Define_Menu47();
+  Define_Menu48();
 
   // Check if DATV Express Server required and, if so, start it
   CheckExpress();

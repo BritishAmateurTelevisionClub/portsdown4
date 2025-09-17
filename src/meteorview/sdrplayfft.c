@@ -28,6 +28,7 @@
 #include "sdrplayfft.h"
 
 #define PI 3.14159265358979323846
+#define PATH_RESTARTS "/home/pi/rpidatv/src/meteorview/restart_counter.txt"
 
 int masterInitialised = 0;
 int slaveUninitialised = 0;
@@ -71,6 +72,8 @@ extern uint8_t clientnumber;
 
 extern uint8_t wfalloverlap;
 extern uint8_t wfallsamplefraction;
+
+extern bool transport_OK;
 
 extern bool NewData; 
 bool debug = false;    
@@ -140,6 +143,9 @@ sdrplay_api_RxChannelParamsT *chParams;
 
 int k = 0;
 int m = 0;
+
+char restarts[63];
+static int restart_count;
 
 void fft_to_buffer();
 int legal_gain(int demanded_Gain);
@@ -265,7 +271,25 @@ void buffer_send() {
 
       if ((fail_count > 20) && (send_check != 0))     // Restart app if still not working after 20 attempts
       {
-        cleanexit(150);
+        GetConfigParam(PATH_RESTARTS, "restarts", restarts);
+
+        restart_count = atoi(restarts);
+        if (restart_count > 180)
+        {
+          printf("too many restarts in buffer_send, rebooting\n");
+          SetConfigParam(PATH_RESTARTS, "restarts", "0");  // reset for next time
+          usleep(10000);
+          //cleanexit(192);                                  // reboot
+          system("sudo reboot now");
+        }
+        else
+        {
+          restart_count++;
+          snprintf(restarts, 60, "%d", restart_count);
+          SetConfigParam(PATH_RESTARTS, "restarts", restarts);
+          printf("Restarting MeteorViewer for the %d time in buffer_send\n", restart_count);
+          cleanexit(150);
+        }
       }
 
       /* now we tell all our clients that we have data ready for them. That way when they  */
@@ -1084,35 +1108,27 @@ void *sdrplay_fft_thread(void *arg) {
   server_buffer[9] = (uint8_t)(freq_khz >> 8);
   server_buffer[10] = (uint8_t)(freq_khz);
 
-  //server_buffer[1] = 'e';
-  //server_buffer[2] = 'a';
-  //server_buffer[3] = 't';
-  //server_buffer[4] = 'h';
-  //server_buffer[5] = 'e';
-  //server_buffer[6] = 'r';
-
   for (i = 11; i <=31; i++)
   {
     server_buffer[i] = rxName[i - 11];
   }
 
   // Print out diagnostics:
-  printf("\nData Header\n\n");
-  uint8_t hbyte;
-  for (i = 0; i < 32; i++)
-  {
-    hbyte = (uint8_t)(server_buffer[i]);
-    if ((hbyte >= 32) && (hbyte <= 126))
-    {
-      printf("Byte %d: Character: %c, Value: %d\n", i, hbyte, hbyte);
-    }
-    else
-    {
-      printf("Byte %d: No Character, Value: %d\n", i, hbyte);
-    }
-  }
-  printf("\n");
-
+  //printf("\nData Header\n\n");
+  //uint8_t hbyte;
+  //for (i = 0; i < 32; i++)
+  //{
+  //  hbyte = (uint8_t)(server_buffer[i]);
+  //  if ((hbyte >= 32) && (hbyte <= 126))
+  //  {
+  //    printf("Byte %d: Character: %c, Value: %d\n", i, hbyte, hbyte);
+  //  }
+  //  else
+  //  {
+  //    printf("Byte %d: No Character, Value: %d\n", i, hbyte);
+  //  }
+  //
+  //("\n");
 
 
   while (transport_started != 0)
@@ -1121,6 +1137,7 @@ void *sdrplay_fft_thread(void *arg) {
 
     if (transport_started != 0)  // failed to start
     {
+      transport_close();
       transport_start_attempts++;
       if (transport_start_attempts == 1)
       {
@@ -1130,13 +1147,34 @@ void *sdrplay_fft_thread(void *arg) {
       usleep(1000000);
       if (transport_start_attempts > 10)
       {
-        cleanexit(150);  // restart the app
+        GetConfigParam(PATH_RESTARTS, "restarts", restarts);
+
+        restart_count = atoi(restarts);
+        if (restart_count > 200)
+        {
+          printf("too many restarts in sdrplay_fft_thread, rebooting\n");
+          SetConfigParam(PATH_RESTARTS, "restarts", "0");  // reset for next time
+          usleep(10000);
+          //cleanexit(192);                                  // reboot
+          system("sudo reboot now");
+        }
+        else
+        {
+          restart_count++;
+          snprintf(restarts, 60, "%d", restart_count);
+          SetConfigParam(PATH_RESTARTS, "restarts", restarts);
+          printf("Restarting MeteorViewer for the %d time in sdrplay_fft_thread\n", restart_count);
+          cleanexit(150);
+        }
       }
     }
     else                          // Started OK
     {
+      transport_OK = true;
       if (transport_start_attempts > 0)  // Had previously failed
       {
+        SetConfigParam(PATH_RESTARTS, "restarts", "0");  // reset for next time
+        printf("Writing reset restart attempts to file\n");
         ShowRemoteCaption();
         UpdateWeb();
       }

@@ -178,6 +178,9 @@ cp -f -r "$PATHSCRIPT"/TXstopextras.sh "$PATHUBACKUP"/TXstopextras.sh
 # Make a safe copy of the user's Test cards
 cp -f -r "$PATHSCRIPT"/images "$PATHUBACKUP"/images
 
+# Make a safe copy of the HamTV Merger config
+cp -f -r "$PATHSCRIPT"/merger_config.txt "$PATHUBACKUP"/merger_config.txt
+
 DisplayUpdateMsg "Step 4 of 10\nUpdating Software Package List\n\nXXXX------"
 
 # Check for the VLC apt Preferences File.  If not present, write it, and re-install VLC
@@ -280,6 +283,7 @@ sudo apt-get -y install uhubctl                                         # For SD
 sudo apt-get -y install libssl-dev                                      # For libwebsockets
 sudo apt-get -y install libzstd-dev                                     # For libiio 202309040
 sudo apt-get -y install arp-scan                                        # For List Network Devices
+sudo apt-get -y install cppcheck                                        # For HamTV Merger Client
 
 # Install libwebsockets if required
 if [ ! -d  /home/pi/libwebsockets ]; then
@@ -709,6 +713,21 @@ make
 cp rydemon ../../bin/
 cd /home/pi
 
+# Compile client for HamTV Merger
+echo
+echo "---------------------------------------------"
+echo "----- Compiling Client for HamTV Merger -----"
+echo "---------------------------------------------"
+
+wget https://github.com/ARISS-UK/tsmerge-client-linuxcli/archive/refs/heads/master.zip
+unzip master.zip
+rm master.zip
+rm /home/pi/tsmerge
+mv tsmerge-client-linuxcli-master tsmerge
+cd /home/pi/tsmerge
+make cppcheck && make
+
+
 # Compile and install the executable for GPIO-switched transmission (201710080)
 echo "Installing keyedtx"
 cd /home/pi/rpidatv/src/keyedtx
@@ -811,6 +830,9 @@ if test -f "$PATHUBACKUP"/images/tccw.jpg ; then     # Test card functionality i
   rm -rf "$PATHSCRIPT"/images
   cp -f -r "$PATHUBACKUP"/images "$PATHSCRIPT"
 fi
+
+# Restore the user's original HamTV Merger config
+cp -f -r "$PATHUBACKUP"/merger_config.txt "$PATHSCRIPT"/merger_config.txt
 
 # Add Mic Gain parameter to config file if not included
 if ! grep -q micgain "$PATHSCRIPT"/portsdown_config.txt; then

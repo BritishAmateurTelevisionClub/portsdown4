@@ -3152,6 +3152,45 @@ do_system_setup_2()
   esac
 }
 
+do_invert()
+{
+  # Rotate 7 inch display
+  # Three scenarios:
+  #  (1) No text in /boot/config.txt, so append it
+  #  (2) Rotate text is in /boot/config.txt, so comment it out
+  #  (3) Commented text in /boot/config.txt, so uncomment it
+
+  # Test for Scenario 1
+  if ! grep -q 'lcd_rotate=2' /boot/config.txt; then
+    # No relevant text, so append it (Scenario 1)
+    sudo sh -c 'echo "\n## Rotate 7 inch Display\nlcd_rotate=2\n" >> /boot/config.txt'
+  else
+    # Text exists, so see if it is commented or not
+    TEST_STRING="#lcd_rotate=2"
+    if ! grep -q -F $TEST_STRING /boot/config.txt; then
+      # Scenario 2
+      sudo sed -i '/lcd_rotate=2/c\#lcd_rotate=2' /boot/config.txt >/dev/null 2>/dev/null
+    else
+      # Scenario 3
+      sudo sed -i '/#lcd_rotate=2/c\lcd_rotate=2' /boot/config.txt  >/dev/null 2>/dev/null
+    fi
+  fi
+
+  sleep 1
+  sudo swapoff -a
+  sudo reboot now
+}
+
+do_display()
+{
+  menuchoice=$(whiptail --title "Display Menu" --menu "$StrSystemContext" 20 78 13 \
+    "1 Invert  " "Reboot and invert touchscreen display"  \
+    3>&2 2>&1 1>&3)
+  case "$menuchoice" in
+    1\ *) do_invert ;;
+  esac
+}
+
 do_lmsver()
 {
   reset
@@ -3539,7 +3578,7 @@ while [ "$status" -eq 0 ]
 
     # Display main menu
 
-    menuchoice=$(whiptail --title "$StrMainMenuTitle" --menu "$INFO" 16 82 10 \
+    menuchoice=$(whiptail --title "$StrMainMenuTitle" --menu "$INFO" 17 82 11 \
 	"0 Transmit" $FREQ_OUTPUT" MHz, "$SYMBOLRATEK" KS, "$MODULATION", FEC "$FECNUM"/"$FECDEN"" \
     "1 Source" "$StrMainMenuSource"" ("$MODE_INPUT" selected)" \
 	"2 Output" "$StrMainMenuOutput"" ("$MODE_OUTPUT" selected)" \
@@ -3547,9 +3586,10 @@ while [ "$status" -eq 0 ]
 	"4 Receive" "$StrMainMenuReceive" \
 	"5 System" "$StrMainMenuSystem" \
     "6 System 2" "$StrMainMenuSystem2" \
-    "7 Lime Config  " "LimeSDR Mini Info and Configuration" \
-	"8 Language" "$StrMainMenuLanguage" \
-    "9 Shutdown" "$StrMainMenuShutdown" \
+    "7 Display" "Display and Touch" \
+    "8 Lime Config  " "LimeSDR Mini Info and Configuration" \
+	"9 Language" "$StrMainMenuLanguage" \
+    "10 Shutdown" "$StrMainMenuShutdown" \
  	3>&2 2>&1 1>&3)
 
         case "$menuchoice" in
@@ -3560,9 +3600,10 @@ while [ "$status" -eq 0 ]
 	    4\ *) do_receive_menu ;;
 	    5\ *) do_system_setup ;;
 	    6\ *) do_system_setup_2 ;;
-	    7\ *) do_lime_setup ;;
-        8\ *) do_language_setup ;;
-        9\ *) do_shutdown_menu ;;
+	    7\ *) do_display ;;
+	    8\ *) do_lime_setup ;;
+        9\ *) do_language_setup ;;
+        10\ *) do_shutdown_menu ;;
            *)
 
         # Display exit message if user jumps out of menu
