@@ -28,6 +28,7 @@ cd /home/pi
 # Read from receiver and merger config files
 FREQ_KHZ=$(get_config_var freq $MCONFIGFILE)
 INPUT_SEL=$(get_config_var socket $MCONFIGFILE)
+LNBVOLTS=$(get_config_var lnbvolts $MCONFIGFILE)
 
 AUDIO_OUT=$(get_config_var audio $RCONFIGFILE)
 VLCVOLUME=$(get_config_var vlcvolume $PCONFIGFILE)
@@ -56,6 +57,15 @@ fi
 INPUT_CMD=" "
 if [ "$INPUT_SEL" == "b" ]; then
   INPUT_CMD="-w"
+fi
+
+# Set the LNB Volts
+VOLTS_CMD=" "
+if [ "$LNBVOLTS" == "h" ]; then
+  VOLTS_CMD="-p h"
+fi
+if [ "$LNBVOLTS" == "v" ]; then
+  VOLTS_CMD="-p v"
 fi
 
 # Error check volume

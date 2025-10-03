@@ -388,6 +388,7 @@ bool mouse_connected = false;          // Set true if mouse detected at startup
 // HamTV Merger
 int htFreq;                            // Tuner freq in integer kHz
 char htSocket[2];                      // Tuner socket, a or b
+char htLNBvolts[31];                   // Tuner LNB volts: off, h or v
 char htCall[31];                       // Call (in caps) for logging on to merger
 char htPasskey[31];                    // Passkey for logging on to merger
 char htRegion[7];                      // Merger region: eu, us, jp or au
@@ -2871,6 +2872,11 @@ void ReadMerger()
   GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
   strcpy(htSocket, Value);
 
+  strcpy(Value, "off");
+  strcpy(Param, "lnbvolts");
+  GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
+  strcpy(htLNBvolts, Value);
+
   strcpy(Value, "CALL");
   strcpy(Param, "call");
   GetConfigParam(PATH_HAMTV_CONFIG, Param, Value);
@@ -4383,6 +4389,9 @@ void ReadLMRXPresets()
     // Input: a or b
     GetConfigParam(PATH_LMCONFIG, "input", LMRXinput);
 
+    // LNBVolts
+    GetConfigParam(PATH_LMCONFIG, "lnbvolts", LMRXvolts);
+
     // Start up frequency
     GetConfigParam(PATH_LMCONFIG, "freq0", Value);
     LMRXfreq[0] = atoi(Value);
@@ -4395,6 +4404,9 @@ void ReadLMRXPresets()
   {
     // Input: a or b
     GetConfigParam(PATH_LMCONFIG, "input1", LMRXinput);
+
+    // LNBVolts
+    GetConfigParam(PATH_LMCONFIG, "lnbvolts1", LMRXvolts);
 
     // Start up frequency
     GetConfigParam(PATH_LMCONFIG, "freq1", Value);
@@ -18965,6 +18977,24 @@ void ChangeHamTV(int NoButton)
     }
     SetConfigParam(PATH_HAMTV_CONFIG, "socket", htSocket);
     break;
+  case 12:                                            // Cycle through LNB volts
+    if (strcmp(htLNBvolts, "h") == 0)
+    {
+      strcpy(htLNBvolts, "v");
+    }
+    else
+    {
+      if (strcmp(htLNBvolts, "off") == 0)
+      {
+        strcpy(htLNBvolts, "h");
+      }
+      else  // All other cases
+      {
+        strcpy(htLNBvolts, "off");
+      }
+    }
+    SetConfigParam(PATH_HAMTV_CONFIG, "lnbvolts", htLNBvolts);
+    break;
   case 5:                                             // Set Call
     while (IsValid == false)
     {
@@ -23041,6 +23071,7 @@ void waituntil(int w,int h)
         case 7:                                         // Cycle through Regions
         case 10:                                        // Change Freq
         case 11:                                        // Toggle Tuner input
+        case 12:                                        // Cycle Tuner volts: 0, h, v
           ChangeHamTV(i);
           Start_Highlights_Menu48();
           UpdateWindow();
@@ -28581,6 +28612,12 @@ void Define_Menu48()
 
   button = CreateButton(48, 11);
   AddButtonStatus(button, "Input^ ", &Blue);
+
+  button = CreateButton(48, 12);
+  AddButtonStatus(button, "LNB Volts^OFF", &Blue);
+  AddButtonStatus(button, "LNB Volts^18 Horiz", &Green);
+  AddButtonStatus(button, "LNB Volts^13 Vert", &Green);
+
 }
 
 
@@ -28617,6 +28654,19 @@ void Start_Highlights_Menu48()
   else
   {
     AmendButtonStatus(ButtonNumber(48, 11), 0, "Input^Not Set", &Blue);
+  }
+
+  if (strcmp(htLNBvolts, "off") == 0)
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 12), 0);
+  }
+  if (strcmp(htLNBvolts, "h") == 0)
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 12), 1);
+  }
+  if (strcmp(htLNBvolts, "v") == 0)
+  {
+    SetButtonStatus(ButtonNumber(CurrentMenu, 12), 2);
   }
 
   snprintf(Calltext, 50, "Call^%s", htCall);

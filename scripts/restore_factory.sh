@@ -92,3 +92,7 @@ cp -f /home/pi/rpidatv/src/pluto_noise_meter/pluto_noise_meter_config.txt.factor
 cp -f /home/pi/rpidatv/src/sweeper/sweeper_config.txt /home/pi/rpidatv/src/sweeper/sweeper_config.txt.bak
 cp -f /home/pi/rpidatv/src/sweeper/sweeper_config.txt.factory /home/pi/rpidatv/src/sweeper/sweeper_config.txt
 
+# merger_config.txt
+cp -f $PATHSCRIPT"/merger_config.txt" $PATHSCRIPT"/merger_config.txt.bak"
+cp -f $PATHSCRIPT"/configs/merger_config.txt.factory" $PATHSCRIPT"/merger_config.txt"
+

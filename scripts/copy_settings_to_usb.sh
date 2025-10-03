@@ -86,6 +86,10 @@ sudo cp -f $PATHSCRIPT"/stream_presets.txt" "$MOUNT_POINT"/portsdown_settings/st
 # Jetson Config
 sudo cp -f $PATHSCRIPT"/jetson_config.txt" "$MOUNT_POINT"/portsdown_settings/jetson_config.txt
 
-# 9 files
+# NF Meters
+sudo cp -f /home/pi/rpidatv/src/nf_meter/nf_meter_config.txt "$MOUNT_POINT"/nf_meter_config.txt
+sudo cp -f /home/pi/rpidatv/src/pluto_nf_meter/pluto_nf_meter_config.txt "$MOUNT_POINT"/pluto_nf_meter_config.txt
+
+# 11 files
 
 sudo umount $DEVICE

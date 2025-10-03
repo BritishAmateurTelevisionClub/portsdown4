@@ -1,3 +1,7 @@
+202510030
+Correct HamTV Test Port and add LNB Volts Option
+Preserve NF Meter settings through updates and allow save to USB
+
 202509170
 Add invert touchscreen option to SSH Console menu
 

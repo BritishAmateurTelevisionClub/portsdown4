@@ -158,6 +158,14 @@ cp -f -r /home/pi/rpidatv/src/plutoview/plutoview_bands.txt "$PATHUBACKUP"/pluto
 # Make a safe copy of the SDRplay Band Viewer config
 cp -f -r /home/pi/rpidatv/src/sdrplayview/sdrplayview_config.txt "$PATHUBACKUP"/sdrplayview_config.txt
 
+# Make a safe copy of the Lime and Pluto NF Meter Configs
+cp -f -r /home/pi/rpidatv/src/nf_meter/nf_meter_config.txt "$PATHUBACKUP"/nf_meter_config.txt
+cp -f -r /home/pi/rpidatv/src/pluto_nf_meter/pluto_nf_meter_config.txt "$PATHUBACKUP"/pluto_nf_meter_config.txt
+
+# Make a safe copy of the Lime and Pluto Noise Meter Configs
+cp -f -r /home/pi/rpidatv/src/noise_meter/noise_meter_config.txt "$PATHUBACKUP"/noise_meter_config.txt
+cp -f -r /home/pi/rpidatv/src/pluto_noise_meter/pluto_noise_meter_config.txt "$PATHUBACKUP"/pluto_noise_meter_config.txt
+
 # Make a safe copy of the Meteor Viewer config
 cp -f -r /home/pi/rpidatv/src/meteorview/meteorview_config.txt "$PATHUBACKUP"/meteorview_config.txt
 
@@ -808,6 +816,14 @@ fi
 # Restore the user's original SDRplay Band Viewer config
 cp -f -r "$PATHUBACKUP"/sdrplayview_config.txt /home/pi/rpidatv/src/sdrplayview/sdrplayview_config.txt
 
+# Restore the user's original Lime and Pluto NF Meter Configs
+cp -f -r "$PATHUBACKUP"/nf_meter_config.txt /home/pi/rpidatv/src/nf_meter/nf_meter_config.txt
+cp -f -r "$PATHUBACKUP"/pluto_nf_meter_config.txt /home/pi/rpidatv/src/pluto_nf_meter/pluto_nf_meter_config.txt
+
+# Restore the user's original Lime and Pluto Noise Meter Configs
+cp -f -r "$PATHUBACKUP"/noise_meter_config.txt /home/pi/rpidatv/src/noise_meter/noise_meter_config.txt
+cp -f -r "$PATHUBACKUP"/pluto_noise_meter_config.txt /home/pi/rpidatv/src/pluto_noise_meter/pluto_noise_meter_config.txt
+
 # Restore the user's original Meteor Viewer config
 cp -f -r "$PATHUBACKUP"/meteorview_config.txt /home/pi/rpidatv/src/meteorview/meteorview_config.txt
 
@@ -1047,6 +1063,18 @@ if ! grep -q muntjacgain= "$PATHSCRIPT"/portsdown_config.txt; then
   echo "t6muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
   echo "t7muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
   echo "t8muntjacgain=10" >> "$PATHSCRIPT"/portsdown_presets.txt
+fi
+
+# Correct HamTV merger test port 202510030
+sed -i -e 's/testport=6789/testport=9978/g' /home/pi/rpidatv/scripts/merger_config.txt
+
+# Add HamTV Merger LNB Voltage parameter to config file if required 202510030
+if ! grep -q lnbvolts= "$PATHSCRIPT"/merger_config.txt; then
+  # File needs updating
+  # Delete any blank lines first
+  sed -i -e '/^$/d' "$PATHSCRIPT"/merger_config.txt
+  # Add the new entry and a new line 
+  echo "lnbvolts=off" >> "$PATHSCRIPT"/merger_config.txt
 fi
 
 # Add new stop alias if required  202311xxx
