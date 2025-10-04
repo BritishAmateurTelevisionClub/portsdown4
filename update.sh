@@ -727,10 +727,13 @@ echo "---------------------------------------------"
 echo "----- Compiling Client for HamTV Merger -----"
 echo "---------------------------------------------"
 
+cd /home/pi
+rm master.zip >/dev/null 2>/dev/null
+rm -r tsmerge-client-linuxcli-master >/dev/null 2>/dev/null   # (from earlier faulty update)
 wget https://github.com/ARISS-UK/tsmerge-client-linuxcli/archive/refs/heads/master.zip
 unzip master.zip
 rm master.zip
-rm /home/pi/tsmerge
+rm -r /home/pi/tsmerge >/dev/null 2>/dev/null
 mv tsmerge-client-linuxcli-master tsmerge
 cd /home/pi/tsmerge
 make cppcheck && make

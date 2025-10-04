@@ -1,3 +1,7 @@
+202510040
+Correct Displayed HamTV Frequency
+Add NF Meters to saved USB parameters
+
 202510030
 Correct HamTV Test Port and add LNB Volts Option
 Preserve NF Meter settings through updates and allow save to USB

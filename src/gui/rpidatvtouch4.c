@@ -14788,17 +14788,8 @@ void RXMerger()
             strcpy(FREQtext, stat_string);
             chopN(FREQtext, 2);
             FREQ = atof(FREQtext);
-            if (strcmp(LMRXmode, "sat") == 0)
-            {
-              FREQ = FREQ + LMRXqoffset;
-            }
             FREQ = FREQ / 1000;
             snprintf(FREQtext, 15, "%.3f MHz", FREQ);
-            if ((TabBandLO[CurrentBand] < -0.5) || (TabBandLO[CurrentBand] > 0.5))      // band not direct
-            {
-              strcat(FREQtext, " ");
-              strcat(FREQtext, TabBandLabel[CurrentBand]);                             // so add band label
-            }
           }
 
           if ((stat_string[0] == '9') && (stat_string[1] == ','))  // SR in S
