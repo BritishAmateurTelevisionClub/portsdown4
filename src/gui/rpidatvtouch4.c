@@ -14395,14 +14395,14 @@ void LMRX(int NoButton)
             strcpy(MERtext, stat_string);
             chopN(MERtext, 3);
             MER = atof(MERtext)/10;
-            if (MER > 51)  // Trap spurious MER readings
+            if (MER > 20)  // Trap spurious MER readings
             {
-              MER = 0;
-              strcpy(MERtext, " ");
+              MER = 19.9;
+              strcpy(MERtext, ">20");
             }
-            else if (MER >= 10)
+            else if (MER < 0.0)
             {
-              snprintf(MERtext, 10, "%.1f", MER);
+              strcpy(MERtext, "0.0");
             }
             else
             {
@@ -14434,7 +14434,7 @@ void LMRX(int NoButton)
             rectangle(wscreen * 1 / 40, hscreen - 1 * linepitch - txtdesc, wscreen * 19 / 40, txttot, 0, 0, 0);
             Text2(wscreen * 1 / 40, hscreen - 1 * linepitch, STATEtext, font_ptr);
             rectangle(wscreen * 1 / 40, hscreen - 9 * linepitch - txtdesc, 470, 8, 0, 0, 0);  // line at base of text
-            rectangle(490, hscreen - 9 * linepitch - txtdesc, 160, 230, 0, 0, 0);             // poss 3rd digit
+            rectangle(490, hscreen - 9 * linepitch - txtdesc, 265, 230, 0, 0, 0);             // mask previous 3rd digit
             LargeText2(wscreen * 1 / 40, hscreen - 9 * linepitch, 4, MERtext, &font_dejavu_sans_72);
             Text2(wscreen * 1 / 40, hscreen - 12 * linepitch, "Touch Centre to Exit", font_ptr);
 
@@ -14462,7 +14462,7 @@ void LMRX(int NoButton)
                 }
                 rectangle(ls, bar_centre + bar_height, wdth, 0 - bar_height, 255, 0, 0); // Red bar
                 rectangle(ls, 1, wdth, bar_centre + bar_height, 0, 0, 0);  // Black below red
-                rectangle(ls, bar_centre, wdth, hscreen - bar_centre, 0, 0, 0); // Black above centre
+                rectangle(ls, bar_centre, wdth, hscreen - bar_centre, 0, 0, 0); // Black above center
               }
             }
             refreshMouseBackground();
@@ -18204,11 +18204,15 @@ void CheckPlutoFirmware()
 
   if (strcmp(firmware_version, "Pluto Firmware Version is v0.31-4-g9ceb-dirty") == 0)
   {
-    MsgBox4(firmware_version, "This is correct for Portsdown operation", " ", "Touch Screen to Continue");
+    MsgBox4(firmware_version, "This is correct for Portsdown operation", "up to 4.2 GHz", "Touch Screen to Continue");
+  }
+  else if (strcmp(firmware_version, "Pluto Firmware Version is v0.32-dirty") == 0)
+  {
+    MsgBox4(firmware_version, "This is correct for Portsdown operation", "up to 6.0 GHz", "Touch Screen to Continue");
   }
   else
   {
-    MsgBox4(firmware_version, "This may not work with Portsdown", "Please update to v0.31-4-g9ceb-dirty", "Touch Screen to Continue");
+    MsgBox4(firmware_version, "This may not work with Portsdown", "Please update to v0.31-4-g9ceb-dirty", "or v0.32-dirty. Touch to Continue");
   }
   wait_touch();
 }
