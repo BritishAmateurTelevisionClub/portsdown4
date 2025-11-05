@@ -18174,6 +18174,7 @@ void CheckPlutoFirmware()
   FILE *fp;
   char firmware_response_line[127]=" ";
   char firmware_version[127];
+  char firmware_version2[127];
 
   MsgBox4("Checking Pluto", "", "Please wait", "");
 
@@ -18198,6 +18199,7 @@ void CheckPlutoFirmware()
     if (firmware_response_line[0] == 'P')
     {
       strcpyn(firmware_version, firmware_response_line, 45);
+      strcpyn(firmware_version2, firmware_response_line, 37);
     }
   }
   pclose(fp);
@@ -18206,7 +18208,7 @@ void CheckPlutoFirmware()
   {
     MsgBox4(firmware_version, "This is correct for Portsdown operation", "up to 4.2 GHz", "Touch Screen to Continue");
   }
-  else if (strcmp(firmware_version, "Pluto Firmware Version is v0.32-dirty") == 0)
+  else if (strcmp(firmware_version2, "Pluto Firmware Version is v0.32-dirty") == 0)
   {
     MsgBox4(firmware_version, "This is correct for Portsdown operation", "up to 6.0 GHz", "Touch Screen to Continue");
   }
@@ -19003,6 +19005,14 @@ void ChangeHamTV(int NoButton)
       }
     }
     printf("HamTV Merger Call set to: %s\n", KeyboardReturn);
+
+    // Stop the merger if the call has been changed
+    if (strcmp(htCall, KeyboardReturn) != 0)
+    {
+      system ("sudo killall tsmerge-client-linuxcli");
+      MergerConnected = false;
+    }
+
     strcpy(htCall, KeyboardReturn);
     SetConfigParam(PATH_HAMTV_CONFIG, "call", htCall);
     break;
@@ -19019,10 +19029,23 @@ void ChangeHamTV(int NoButton)
       }
     }
     printf("HamTV Merger Passkey set to: %s\n", KeyboardReturn);
+
+    // Stop the merger if the key has been changed
+    if (strcmp(htPasskey, KeyboardReturn) != 0)
+    {
+      system ("sudo killall tsmerge-client-linuxcli");
+      MergerConnected = false;
+    }
+
     strcpy(htPasskey, KeyboardReturn);
     SetConfigParam(PATH_HAMTV_CONFIG, "passkey", htPasskey);
     break;
   case 7:                                             // Cycle through Regions
+
+    // Stop the merger before changing region
+    system ("sudo killall tsmerge-client-linuxcli");
+    MergerConnected = false;
+
     if (strcmp(htRegion, "eu") == 0)
     {
       strcpy(tempRegion, "us");
