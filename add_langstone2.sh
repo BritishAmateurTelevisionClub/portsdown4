@@ -31,6 +31,9 @@ mv "$3.bak" "$3"
 
 ############################################################
 
+# Amend the sources.list to legacy
+sudo bash -c 'echo -e "deb http://legacy.raspbian.org/raspbian/ buster main contrib non-free rpi" > /etc/apt/sources.list' 
+
 # First, update packages to the latest standard
 
 sudo dpkg --configure -a                         # Make sure that all the packages are properly configured

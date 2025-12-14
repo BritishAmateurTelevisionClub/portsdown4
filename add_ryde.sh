@@ -32,6 +32,9 @@ else
   echo
 fi
 
+# Amend the sources.list to legacy
+sudo bash -c 'echo -e "deb http://legacy.raspbian.org/raspbian/ buster main contrib non-free rpi" > /etc/apt/sources.list' 
+
 # Update the package manager
 echo
 echo "------------------------------------"

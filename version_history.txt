@@ -1,3 +1,6 @@
+202512140
+Amend the sources.list to legacy
+
 202511050
 Correct Pluto Firmware Check
 Disconnect from HamTV merger if log-in parameters changed
