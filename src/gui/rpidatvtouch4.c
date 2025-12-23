@@ -501,6 +501,7 @@ void SaveCurrentRX();
 void SelectRTLmode(int NoButton);
 void RTLstart();
 void RTLstop();
+void run_ook48();
 void ReadStreamPresets();
 int CheckExpressConnect();
 int CheckExpressRunning();
@@ -4896,6 +4897,40 @@ void RTLstop()
   system("sudo killall -9 rtl_fm >/dev/null 2>/dev/null");
   system("sudo killall -9 aplay >/dev/null 2>/dev/null");
 }
+
+
+/***************************************************************************//**
+ * @brief runs the experimental OOK48 beacon using an ADF4351
+ *
+ * @param nil
+ *
+ * @return void. 
+*******************************************************************************/
+
+void run_ook48()
+{
+  // Check internet connection
+  if (CheckGoogle() == 1)
+  {
+    MsgBox4("No internet connection", " ", "Time reference is probably inaccurate", " ");
+    wait_touch();
+  }
+  else
+  {
+    // update system time
+    system("sudo timedatectl set-timezone \"Europe/London\" &");
+  }
+
+  // Start OOK48 beacon
+  system ("/home/pi/rpidatv/bin/ook48 &");
+
+  MsgBox4("OOK48 Beacon running", " ", "Touch screen to exit", "and stop beacon");
+  wait_touch();
+
+  // Kill the beacon
+  system("sudo killall ook48");
+}
+
 
 /***************************************************************************//**
  * @brief Reads the Presets from stream_presets.txt and formats them for
@@ -10676,7 +10711,7 @@ void ChangeBandDetails(int NoButton)
   snprintf(Value, 30, "%d", TabBandMuntjacGain[band]);
   while ((MuntjacGain < 1) || (MuntjacGain > 20))    // Do not allow zero or blank Muntjac Gain
   {
-    snprintf(Prompt, 63, "Set the Muntjac Gain for the %s Band:", TabBandLabel[band]);
+    snprintf(Prompt, 63, "Set the Muntjac Gain (0 - 20) for the %s Band:", TabBandLabel[band]);
     Keyboard(Prompt, Value, 3);
     MuntjacGain = atoi(KeyboardReturn);
   }
@@ -11296,7 +11331,7 @@ void SetDeviceLevel()
   {
     while ((MuntjacGain < 0) || (MuntjacGain > 20) || (strlen(KeyboardReturn) < 1))
     {
-      snprintf(Prompt, 62, "Set the Muntjac Gain for the %s Band:", TabBandLabel[CurrentBand]);
+      snprintf(Prompt, 62, "Set the Muntjac Gain (0 - 20) for the %s Band:", TabBandLabel[CurrentBand]);
       snprintf(Value, 4, "%d", TabBandMuntjacGain[CurrentBand]);
       Keyboard(Prompt, Value, 3);
       MuntjacGain = atoi(KeyboardReturn);
@@ -20414,6 +20449,11 @@ void waituntil(int w,int h)
           DisplayLogo();
           cleanexit(134);
           break;
+        case 15:
+          run_ook48();
+          Start_Highlights_Menu7();
+          UpdateWindow();
+          break;
         case 21:                              // Menu 1
           printf("MENU 1 \n");
           CurrentMenu=1;
@@ -22432,8 +22472,8 @@ void waituntil(int w,int h)
           printf("Jetson Lime\n");
           break;
         case 12:                              // Muntjac
-          RegisterMuntjac();
           SelectOP(i);
+          RegisterMuntjac();
           printf("Muntjac\n");
           break;
         case 13:                              // Lime Mini FPGA
@@ -24306,8 +24346,8 @@ void Define_Menu7()
 
   // 4th line up Menu 7: 
 
-  //button = CreateButton(7, 18);
-  //AddButtonStatus(button, "Noise Figure^Meter (Pluto)", &Blue);
+  button = CreateButton(7, 15);
+  AddButtonStatus(button, "OOK48^Beacon", &Blue);
 
   // Top of Menu 7
 

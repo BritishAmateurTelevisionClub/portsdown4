@@ -1,0 +1,8 @@
+# Beacon frequency in MHz
+startfreq=432.0
+
+# Timing offset in ms
+offset=300
+
+# Message Text
+message=cq de G8GKQ
