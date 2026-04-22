@@ -208,14 +208,12 @@ case "$MODE_STARTUP" in
 esac
 
 while [ "$GUI_RETURN_CODE" -gt 90 ] || [ "$GUI_RETURN_CODE" -eq 0 ];  do
-  # Wait for fcgi socket release
-  fuser -k 2005/tcp
-  BUSY_SOCKET="$?"
-  while [ "$BUSY_SOCKET" -eq 0 ]; do
-    sleep 1
-    fuser -k 2005/tcp
-    BUSY_SOCKET="$?"
-  done
+
+  # Kill any process blocking port 2005
+  lsof -ti:2005
+  if [ $? == 0 ] ; then
+    lsof -ti:2005 | xargs kill -9
+  fi
 
   case "$GUI_RETURN_CODE" in
     0)

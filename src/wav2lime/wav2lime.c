@@ -350,10 +350,10 @@ int main(int argc, char *const argv[])
             // Copy samples
             for(int i = 0; i < nSamples; i++)
             {
-                //sdrSamples[i].i = (((struct s16iq_sample_s*)fileSamples)[i].i);
-                //sdrSamples[i].q = (((struct s16iq_sample_s*)fileSamples)[i].q);
-                sdrSamples[i].i = (((struct s16iq_sample_s*)fileSamples)[i].i << 2);
-                sdrSamples[i].q = (((struct s16iq_sample_s*)fileSamples)[i].q << 2);
+                sdrSamples[i].i = (((struct s16iq_sample_s*)fileSamples)[i].i);
+                sdrSamples[i].q = (((struct s16iq_sample_s*)fileSamples)[i].q);
+                //sdrSamples[i].i = (((struct s16iq_sample_s*)fileSamples)[i].i << 2);
+                //sdrSamples[i].q = (((struct s16iq_sample_s*)fileSamples)[i].q << 2);
             }
         }
         else if(input_format == WAVFORMAT_F32)

@@ -192,6 +192,12 @@ cp -f -r "$PATHSCRIPT"/merger_config.txt "$PATHUBACKUP"/merger_config.txt
 # Make a safe copy of the potential Fixed IP config
 cp -f -r /home/pi/rpidatv/scripts/configs/dhcpcd.conf.prep "$PATHUBACKUP"/dhcpcd.conf.prep
 
+# Make a safe copy of the ISS Tracker config
+cp -f -r "$PATHSCRIPT"/tracker_config.txt "$PATHUBACKUP"/tracker_config.txt
+
+# Make a safe copy of the user's Muntjac cal files
+cp -f -r /home/pi/rpidatv/bin/*.mjo "$PATHUBACKUP"/
+
 DisplayUpdateMsg "Step 4 of 10\nUpdating Software Package List\n\nXXXX------"
 
 # Amend the sources.list to legacy
@@ -300,6 +306,13 @@ sudo apt-get -y install arp-scan                                        # For Li
 sudo apt-get -y install cppcheck                                        # For HamTV Merger Client
 sudo apt-get -y install dnsmasq                                         # For dhcp server
 sudo apt-get -y install socat                                           # For debugging network issues
+sudo apt-get -y install lsof                                            # For debugging web control issues
+sudo apt-get -y install python3-dev                                     # For ISS tracker
+sudo apt-get -y install python3-pip                                     # For ISS tracker
+sudo apt-get -y install libhamlib-dev                                   # For ISS tracker
+sudo apt-get -y install libhamlib++-dev                                 # For ISS tracker
+sudo apt-get -y install libhamlib-utils                                 # For ISS tracker
+pip3 install ephem requests                                             # For ISS tracker
 
 # Install libwebsockets if required
 if [ ! -d  /home/pi/libwebsockets ]; then
@@ -399,7 +412,7 @@ wget https://github.com/${GIT_SRC}/portsdown4/archive/master.zip -O master.zip
 unzip -o master.zip
 cp -f -r portsdown4-master/bin rpidatv
 cp -f -r portsdown4-master/scripts rpidatv
-cp -f -r portsdown4-master/src rpidatv
+cp -f -r -p portsdown4-master/src rpidatv
 rm -f rpidatv/video/*.jpg
 cp -f -r portsdown4-master/video rpidatv
 cp -f -r portsdown4-master/version_history.txt rpidatv/version_history.txt
@@ -870,6 +883,12 @@ fi
 
 # Restore the user's original HamTV Merger config
 cp -f -r "$PATHUBACKUP"/merger_config.txt "$PATHSCRIPT"/merger_config.txt
+
+# Restore the user's original ISS Tracker config
+cp -f -r "$PATHUBACKUP"/tracker_config.txt "$PATHSCRIPT"/tracker_config.txt
+
+# Restore the user's original Muntjac cal files
+cp -f -r "$PATHUBACKUP"/*.mjo /home/pi/rpidatv/bin/
 
 # Restore the user's original potential Fixed IP config
 cp -f -r "$PATHUBACKUP"/dhcpcd.conf.prep /home/pi/rpidatv/scripts/configs/dhcpcd.conf.prep

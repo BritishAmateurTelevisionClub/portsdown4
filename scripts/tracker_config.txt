@@ -1,0 +1,11 @@
+azoffset=0
+eloffset=0
+trackmode=iss
+azpark=215
+elpark=30
+flip=disabled
+ctrltype=G5500pi
+g5500piaddress=192.168.2.140:8008
+hamlibdevice=/dev/ttyUSB2
+hamlibmodel=603
+hamlibbaud=9600
