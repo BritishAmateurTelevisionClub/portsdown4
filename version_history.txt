@@ -1,3 +1,6 @@
+202604240
+Bugfix libwebsockets install for MeteorViewer
+
 202604200
 Bugfix ISS Tracker Install
 

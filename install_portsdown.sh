@@ -140,6 +140,11 @@ cd /home/pi
 # Install Websockets for Meteor Beacon RX server
 git clone https://github.com/warmcat/libwebsockets.git
 cd libwebsockets
+
+# Correct for 32 bit (temporary fix, no longer required)
+#sed -i "s/ts.tv_sec = target_us \/ 1000000;/ts.tv_sec = (time_t)(target_us \/ 1000000);/" lib/core-net/txpacer.c
+#sed -i -E "s/ts.tv_nsec = \(target_us \% 1000000\) \* 1000;/ts.tv_nsec = (long)((target_us % 1000000) * 1000);/" lib/core-net/txpacer.c
+
 cmake ./
 make all
 sudo make install

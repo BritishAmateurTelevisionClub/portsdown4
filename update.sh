@@ -326,6 +326,19 @@ if [ ! -d  /home/pi/libwebsockets ]; then
   cd /home/pi
 fi
 
+# Re-install libwebsockets if failed on April 2026
+if grep -q 'ts.tv_sec = target_us / 1000000' /home/pi/libwebsockets/lib/core-net/txpacer.c; then
+  cd /home/pi
+  sudo rm -rf libwebsockets
+  git clone https://github.com/warmcat/libwebsockets.git
+  cd libwebsockets
+  cmake ./
+  make all
+  sudo make install
+  sudo ldconfig
+  cd /home/pi
+fi
+
 # Delete any old master files
 rm /home/pi/master.zip >/dev/null 2>/dev/null
 
@@ -644,8 +657,8 @@ else            # api is intalled, so try to compile SDRplay apps
     echo "-----------------------------------------"
     cd /home/pi/rpidatv/src/sdrplayview
     make
-    if [[ "$?" == "0" ]]; then     # Successful compile
-      cp sdrplayview ../../bin
+    if [[ "$?" == "0" ]]; then     # Successful compile so copy with permissions
+      cp -p sdrplayview ../../bin
       cd /home/pi
     else
       # Create file to trigger install on next reboot
