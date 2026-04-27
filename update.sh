@@ -494,10 +494,9 @@ echo "----------------------------"
 cd /home/pi/rpidatv/src/muntjac
 
 gcc  muntjacsdr_dvb.c  dvbs2neon.S  -mfpu=neon  -lpthread  -o  muntjacsdr_dvb
-gcc  mjcalib-0v1a.c  dvbs2neon.S  -mfpu=neon  -lpthread  -o mjcalib  # only used for manual calibration
+#gcc  mjcalib-0v1a.c  dvbs2neon.S  -mfpu=neon  -lpthread  -o mjcalib  # only used for manual calibration
 
 cp muntjacsdr_dvb /home/pi/rpidatv/bin/             # Executable
-cp E46214B063533828.mjo /home/pi/rpidatv/bin/       # LO Suppression file
 
 cd /home/pi
 

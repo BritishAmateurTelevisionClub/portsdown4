@@ -1,7 +1,41 @@
+/*  Muntjac-4 - a DVB-S2 driver for the Muntjac SDR
+    Copyright (C) 2026  Brian Jordan G4EWJ
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 // Muntjac4 for Raspberry Pi
 
 #define VERSIONX 	"muntjacsdr_dvb"
-#define VERSIONX2	"1v0b"
+#define VERSIONX2	"1v0m"
+
+/*
+	ensure panic frames have at least 4 packets for MiniTioune 
+	prevent transmit routine from winding up a cpu
+	write all usb bytes at once
+	remove SR100
+	reset TEMPS before frequency band check
+	remove TESTCARD check in chinese mode
+	add LO calibration for tripling from 413.333 to 429.999
+	tidy up help output
+	correct -y error
+	put driver and pico versions into sdt
+	buffer 1.5s worth of frames before starting USB output
+	correct -x and use for mixer power
+	add new mixing ranges for 23cm
+	correct 2m mixing range
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -445,7 +479,7 @@ volatile	uint32						inputstarttime ;
 			int							hindex ;		
 
 			char						info				[65536] ;
-			int32						localoscsettings 	[2] [32] [2] ;			// 2 bands, 31 power levels, I and Q
+			int32						localoscsettings 	[3] [32] [2] ;			// 3 bands, 31 power levels, I and Q
 
 			char						infoip				[256] ;
 			char						inputfilename 		[256] ;
@@ -469,6 +503,7 @@ volatile	uint8						receivepacketsarray [MAXRECEIVEPACKETS] [188] ;
 			uint32						mjinbufflength ;
 			char						mjinbuff [65536] ;	// for reading status from MJ
 			uint8						emptyframe 		[36 * 1024] ;
+			uint8						emptyframe2		[36 * 1024] ;
 			uint8						nullpacketframe [36 * 1024] ;
 			uint8						dummyframe 		[36 * 1024] ;
 
@@ -479,8 +514,8 @@ volatile	int32						framesindexout ;
 
 // provides a divisor from 1000
 
-            enum                                       {SR0, SR100, SR125, SR250, SR333, SR500, SR1000} ;
-			uint32						txdivisors[] = {  0,    10,     8,     4,     3,     2,      1} ;
+            enum                                       {SR0, SR125, SR250, SR333, SR500, SR1000} ;
+			uint32						txdivisors[] = {  0,     8,     4,     3,     2,      1} ;
 			uint32						txdivisor ;
 
 #define RECEIVEBUFFSIZE					(188 * 8)
@@ -524,8 +559,11 @@ volatile	uint32						dropvideo ;
 volatile	uint32						dropaudio ;
 volatile	int32						transvertotherfreq ;
 volatile	int32						transvertmultiplier ;
-volatile	uint32						packetsinframe ;
+volatile	int32						packetsinframe ;
+volatile	uint32						nullpacketsinsertedcount ;
+volatile	uint32						nullpacketsdeletedcount ;
 volatile	uint32						chinese ;
+			int32						mixerpower ;
 
     		uint16 						udpinport ; 
     		int32						insock ; 
@@ -678,7 +716,11 @@ int main (int argc, char *argv[])
 	lastrealtime			= 0 ;
 	udpinport				= DEFAULTUDPINPORT ;
 	packetsinframe			= 0 ;
+	nullpacketsinsertedcount = 0 ;
+	nullpacketsdeletedcount  = 0 ;
 	chinese					= 0 ; 
+
+	mixerpower 				= 26 ;
 
 	memset ((void*) &mjinforeceived, 0, sizeof(mjinforeceived)) ;			 
 	memset (&savedpcrpacket, 	0, sizeof(savedpcrpacket)) ;			 
@@ -851,7 +893,8 @@ int main (int argc, char *argv[])
 				(tempu >= 3400e6 && tempu <= 3410.001e6) || 
 				(tempu >= 2390e6 && tempu <= 2490.001e6) || 
 				(tempu >= 1300e6 && tempu <= 1305.001e6) ||
-				(tempu >= 1273e6 && tempu <= 1277.001e6) ||
+				(tempu >= 1270e6 && tempu <= 1280.001e6) ||
+				(tempu >= 1244e6 && tempu <= 1250.001e6) ||
 				(tempu >= 144e6 && tempu <= 147.001e6)   ||
 				(tempu >= 70.5e6 && tempu <= 71.501e6)   ||
 				(tempu >= 50e6 && tempu <= 54.001e6)     ||  
@@ -876,13 +919,19 @@ int main (int argc, char *argv[])
 					transvertmultiplier = -3 ;
 					tempu 				= tempu - transvertmultiplier * transvertotherfreq ;
 				}
-				else if (tempu >= 146e6 && tempu <= 147.001e6)
+				else if (tempu >= 144e6 && tempu <= 147.001e6)
 				{
 					transvertotherfreq 	= 780e6 ;
 					transvertmultiplier = -3 ;
 					tempu 				= tempu - transvertmultiplier * transvertotherfreq ;
 				}
-				else if (tempu >= 1273e6 && tempu <= 1277.001e6)
+				else if (tempu >= 1244e6 && tempu <= 1250.001e6)
+				{
+					transvertotherfreq 	= 390e6 ;
+					transvertmultiplier = -3 ;
+					tempu 				= tempu - transvertmultiplier * transvertotherfreq ;
+				}
+				else if (tempu >= 1270e6 && tempu <= 1280.001e6)
 				{
 					transvertotherfreq 	= 404e6 ;
 					transvertmultiplier = -3 ;
@@ -958,7 +1007,6 @@ int main (int argc, char *argv[])
 				switch (tempu)
 				{
 					case  333000:	txdivisor = SR333  ; mjsettings.symbolrate = 333 ; nullmodify = 999 ; break ;
-					case  100000:	txdivisor = SR100  ; break ;
 					case  125000:	txdivisor = SR125  ; break ;
 					case  250000:	txdivisor = SR250  ; break ;
 					case  333333:	txdivisor = SR333  ; break ;
@@ -1186,21 +1234,25 @@ int main (int argc, char *argv[])
             tempiloc = temp / 100 ;
             tempqloc = temp % 100 ;
 
-			sprintf (info+strlen(info), "%04d\r\n", temp) ;
-			if 
-			(
-				   temp < 0 
-				|| strlen(argv[argindex]) != 4 
-				|| strcmp(argv[argindex], temps)
-				|| (tempiloc > 63 && tempiloc != 99)
-				|| (tempqloc > 63 && tempqloc != 99)
-			)
-			{
-				tempiloc = -2 ;
-				tempqloc = -2 ;
-				sprintf (info+strlen(info), "*LO settings error* \r\n") ;
-				returncode |= ERROR_LO ;			
-			}
+            temp   = atoi (argv[argindex]) ;
+            tempiloc = temp / 100 ;
+            tempqloc = temp % 100 ;
+            sprintf (temps, "%04d\r\n", temp) ;
+
+            if
+            (
+                   temp < 0
+                || strlen(argv[argindex]) != 4
+                || strncmp(argv[argindex], temps, 4)
+                || (tempiloc > 63 && tempiloc != 99)
+                || (tempqloc > 63 && tempqloc != 99)
+            )
+            {
+                tempiloc = -2 ;
+                tempqloc = -2 ;
+                sprintf (info+strlen(info), "*LO settings error* \r\n") ;
+                returncode |= ERROR_LO ;
+            }
 
             if (mainband == -1)
             {
@@ -1242,6 +1294,16 @@ int main (int argc, char *argv[])
 		else if (strcmp (argv[argindex], "-x") == 0)							
 		{																
 			argindex++ ;
+			temp = (int) (atof (argv[argindex]) * 100) ;
+			if (temp > 31 || temp < 0)
+			{
+				sprintf (info+strlen(info), "*Mixer power invalid* \r\n") ;
+				returncode |= ERROR_POWER ;
+			}
+			else
+			{
+				mixerpower = temp ;
+			}
 		}
 		else if (strcmp (argv[argindex], "-e") == 0)							
 		{																
@@ -1568,20 +1630,10 @@ int main (int argc, char *argv[])
 
 		if (strstr (modeinput,"CARDH264") || strstr (modeinput,"CONTEST") || strstr (modeinput,"DESKTOP"))
 		{
-			chinese &= ~1 ;
+///			chinese &= ~1 ;
 		}
 	}
 
-	if (modeinput[0])								// config file was found
-	{
-		if (provider[0] == 0)						// not set from command line
-		{
-			strcpy (provider, "Portsdown4") ;
-		}
-	}
-	
-	sdt_setup() ;
-	
 	if (chinese & 1)
 	{
 		if (strstr(inputfilename, ".ts"))
@@ -1598,6 +1650,11 @@ int main (int argc, char *argv[])
 	neonsettings.rolloff 			= mjsettings.rolloff ;
 	neonsettings.constellation 		= mjsettings.constellation ;
 	neonsettings.pilots 			= mjsettings.pilots ;
+
+///	neonsettings.magic				= MAGIC_MARKER ;							// enable extra parameters
+///	neonsettings.datafield_size		= 1 ;
+
+
 /*
 	neonsettings.magic				= 0x7388c542 ;							// enable extra parameters
 	if (chinese & 1)
@@ -1736,8 +1793,18 @@ int main (int argc, char *argv[])
 
 // get an empty frame and a dummy frame
 
+		status = dvbs2neon_control (STREAM0, CONTROL_SET_OUTPUT_BUFFER, (uint32) &emptyframe2, 0) ;			// set buffer address
+		for (x = 0 ; x < 4 ; x++)
+		{
+			status = dvbs2neon_packet  (STREAM0, (uint32)&nullpacket, 0) ;			
+		}
+		status = dvbs2neon_packet  (STREAM0, 0, 1) ;	// parameter = 1, returns a frame even if not full
 		status = dvbs2neon_control (STREAM0, CONTROL_SET_OUTPUT_BUFFER, (uint32) &emptyframe, 0) ;			// set buffer address
-		status = dvbs2neon_packet  (STREAM0, 0, 1) ;														// parameter = 1, returns a frame even if not full
+		for (x = 0 ; x < 4 ; x++)
+		{
+			status = dvbs2neon_packet  (STREAM0, (uint32)&nullpacket, 0) ;			
+		}
+		status = dvbs2neon_packet  (STREAM0, 0, 1) ;	// parameter = 1, returns a frame even if not full
 		status = dvbs2neon_control (STREAM0, CONTROL_GET_DUMMY_FRAME,   (uint32) &dummyframe, 0) ;			// set buffer address
 	}
 
@@ -1944,12 +2011,19 @@ int main (int argc, char *argv[])
 		netprint (temps) ;
 		if (provider[0] == 0)
 		{
-///			sprintf (provider, " Muntjac4-%s-%s", muntjacpicoversion, VERSIONX2) ;
+			if (limeband >= 0)				// came from PD4
+			{
+				strcpy (provider, "PD4-") ;
+			}
+			else
+			{
+				strcpy (provider, "") ;
+			}
+			sprintf (provider+strlen(provider), "Muntjac4-%s-%s", muntjacpicoversion, VERSIONX2) ;
+			sdt_setup() ;
 			sprintf (provider, " ") ;
 		}
 	}
-
-/////	sdt_setup() ;
 	
 // apply local oscillator suppression settings from muntjac.mjo, if available
 
@@ -1969,7 +2043,7 @@ int main (int argc, char *argv[])
 	{
 		otherband 							= 0 ;
 		mjsettings.frequency 	[otherband]	= transvertotherfreq ;
-		mjsettings.power 		[otherband]	= 26 ;
+		mjsettings.power 		[otherband]	= mixerpower ;
 		mjsettings.carriers		[otherband]	= 1 ;
 		mjsettings.txon  		[otherband] = 0xc5 ;
 	}
@@ -1997,6 +2071,10 @@ int main (int argc, char *argv[])
 				{
 					x = 1 ;
 				}
+				else if (p0 == 1300) 
+				{
+					x = 2 ;
+				}
 				else
 				{
 					x = -1 ;
@@ -2021,6 +2099,7 @@ int main (int argc, char *argv[])
 
 		for (x = 0 ; x < 2 ; x++)
 		{
+			strcmp (temps, "") ;
 			if (mjsettings.iloc[x] == -1 && mjsettings.qloc[x] == -1)
 			{
 				if (mjsettings.frequency[x] >= 430e6 && mjsettings.frequency[x] <= 450e6)
@@ -2031,6 +2110,10 @@ int main (int argc, char *argv[])
 				{
 					strcpy (temps, "HIGHBAND") ;
 				}
+				else if (mjsettings.frequency[x] >= 413.333e6 && mjsettings.frequency[x] < 430e6)
+				{
+					strcpy (temps, "TRIPLING") ;
+				}
 				else
 				{
 					strcpy (temps, "") ;
@@ -2038,16 +2121,24 @@ int main (int argc, char *argv[])
 
 				if (temps[0])
 				{
-					printf ("%s\r\n", temps) ;
+					if (strcmp (temps, "TRIPLING") == 0)
+					{
+						y = 2 ;
+					}
+					else
+					{
+						y = x ;
+					}
 					tempu = mjsettings.power [x] ;
-					mjsettings.iloc [x] = localoscsettings [x] [tempu] [0] ;				
-					mjsettings.qloc [x] = localoscsettings [x] [tempu] [1] ;				
+					mjsettings.iloc [x] = localoscsettings [y] [tempu] [0] ;				
+					mjsettings.qloc [x] = localoscsettings [y] [tempu] [1] ;				
 					if (mjsettings.iloc[x] == -1 && mjsettings.qloc[x] == -1)				// in case settings are available only for power 0, 4, 8 . . .
 					{
 						tempu &= ~3 ;
-						mjsettings.iloc [x] = localoscsettings [x] [tempu] [0] ;				
-						mjsettings.qloc [x] = localoscsettings [x] [tempu] [1] ;				
+						mjsettings.iloc [x] = localoscsettings [y] [tempu] [0] ;				
+						mjsettings.qloc [x] = localoscsettings [y] [tempu] [1] ;				
 					}
+					netprint (temps) ;
 				}
 			}
 		}
@@ -2171,6 +2262,20 @@ int main (int argc, char *argv[])
 				framing_thread_status = 1 ;							// start the framing thread
 			}
 		}
+
+// buffer 1.5s worth of frames before starting the USB output routine
+
+		utemp = packetspersecond / packetsperframe ;				// frames per second
+		utemp = utemp * 3 / 2 ;
+
+		do
+		{
+			temp = framesindexin - framesindexout ;
+			if (temp < 0)
+			{
+				temp += MAXFRAMES ;
+			}
+		} while (terminate == 0 && temp < utemp) ;
 					
 		if (terminate == 0 && returncode == 0)
 		{
@@ -2586,6 +2691,15 @@ void* receive_routine (void* dummy)
 			packet = receivebuff + x * 188 ;
 			pid = ((packet[1] & 0x1f) * 256) + packet [2] ; 
 
+			if (nullpacketsinsertedcount != nullpacketsdeletedcount)
+			{
+				if (pid == 0x1fff)
+				{		
+					nullpacketsdeletedcount++ ;
+					continue ;
+				}
+			}
+
 			vpts = 0 ;
 			apts = 0 ;
 			pcr  = 0 ;
@@ -2893,7 +3007,7 @@ void* framing_routine (void* dummy)
 	{
 		usleep (1000) ;
 	}
-
+	
 	if (framing_thread_status == 1)
 	{
 		netprint ("Framing thread is starting") ;
@@ -2907,6 +3021,9 @@ void* framing_routine (void* dummy)
 			continue ;
 		}
 
+		packetpointer = 0 ;
+		partfilledframe = 0 ;
+
 		if 
 		(
 			receivepacketsindexout == receivepacketsindexin &&
@@ -2917,9 +3034,6 @@ void* framing_routine (void* dummy)
 			continue ;
 		}
 		
-		packetpointer = 0 ;
-		partfilledframe = 0 ;
-
 		temp = framesindexin - framesindexout ;			
 		if (temp < 0)
 		{
@@ -2959,12 +3073,28 @@ void* framing_routine (void* dummy)
 		{
 			continue ;
 		}
-		
+
 		if (packetsinframe == 0)
 		{
 	       	status = dvbs2neon_control (STREAM0, CONTROL_SET_OUTPUT_BUFFER, (uint32) framesarray [framesindexin], 0) ;	// set buffer address
 		}
+///www
 
+		if (partfilledframe)
+		{
+			temp = 4 - packetsinframe ;
+			if (temp > 0)
+			{
+				nullpacketsinsertedcount += temp ;
+				packetsinframe += temp ;
+				for (x = 0 ; x < temp ; x++)
+				{
+					status = dvbs2neon_packet (STREAM0, (uint32) nullpacket, 0) ;
+				}
+			}
+			packetpointer = 0 ;
+		}
+		
 		status = dvbs2neon_packet (STREAM0, (uint32) packetpointer, partfilledframe) ;
 		packetsout++ ;
 		packetsinframe++ ;	
@@ -3075,6 +3205,7 @@ void* transmit_routine (void* dummy)
 
 			if (framepointer)
 			{
+
 				bufferlowflag = 0 ;
 				framecount++ ;
 
@@ -3152,6 +3283,7 @@ void* transmit_routine (void* dummy)
 			outputpointer = usbtxbuff ;
 			while (bytestosend > 0)
 			{
+/*
 				if (bytestosend < 8192)
 				{
 					utemp = bytestosend ;
@@ -3160,13 +3292,18 @@ void* transmit_routine (void* dummy)
 				{
 					utemp = 8192 ;
 	            }
-	            status = write (mjfd, outputpointer, utemp) ;
+*/
+	            status = write (mjfd, outputpointer, bytestosend) ;
 	            if (status >= 0)
 	            {
 	            	outputpointer += status ;
 					bytestosend -= status ;
 	            }
-	            else if (errno != EAGAIN)
+	            else if (errno == EAGAIN)
+	            {
+	            	usleep (1000) ;
+	            }
+	            else
 	            {
 					sprintf (temps, "Output error (%d) ", errno) ;
 					netprint (temps) ;
@@ -3591,6 +3728,10 @@ uint8* modifyandstorepacket2 (uint8* packet)
 // calculate the current pcr
 
 	utempl = packetsin - firstpacket ;			// number of packets since start
+
+	utempl += nullpacketsinsertedcount ;
+	utempl -= nullpacketsdeletedcount ;
+
 	utempl = utempl * 1504 ;					// bits since start
 	utempl = utempl * 27000000 ;				// units of 27MHz
 	utempl = utempl / realbitrate ;				// divide by TS bits per second to give number of seconds
@@ -3791,7 +3932,7 @@ void display_help()
 	sprintf (info+strlen(info),"-n  null deletion      removes a null packet for multiples of the specified value, for testing only \r\n") ;
 	sprintf (info+strlen(info),"-o  output file        (default: /dev/ttyMJ0) \r\n") ;
 	sprintf (info+strlen(info),"-p  pilots on          no parameter \r\n") ;
-	sprintf (info+strlen(info),"-s  symbol rate        100000, 125000, 250000, 333000, 333333, 500000, 1000000 \r\n") ;
+	sprintf (info+strlen(info),"-s  symbol rate        125000, 250000, 333000, 333333, 500000, 1000000 \r\n") ;
 	sprintf (info+strlen(info),"                       (native SR is 333333 - for 333000, a null packet is inserted every 999 packets) \r\n") ;
 	sprintf (info+strlen(info),"-t  frequency          389.5e6-510e6, 770e6-1030e6, 2390e6-2490e6 \r\n") ;
 	sprintf (info+strlen(info),"                       note that the data sheet ranges are 779.0-1020.0, 2400.0-2483.5 \r\n") ;
@@ -3799,11 +3940,11 @@ void display_help()
 	sprintf (info+strlen(info),"-u  UDP debug output   (default: 127.0.0.1:9979, nc -kluv 9979 to view) \r\n") ;
 	sprintf (info+strlen(info),"-v  short frames on    no parameter \r\n") ;
 	sprintf (info+strlen(info),"                       (DVBS2 does not support FEC 9/10 for short frames) \r\n") ;
-	sprintf (info+strlen(info),"-w  provider           adds Muntjac firmware and driver versions to the provider name in the SDT \r\n") ;
-	sprintf (info+strlen(info),"-x  mixer              specify mixer type (future use \r\n") ;
+	sprintf (info+strlen(info),"-w  provider           sets the provider name in the SDT \r\n") ;
+	sprintf (info+strlen(info),"-x  mixer power        0.00 - 0.31 \r\n") ;
 	sprintf (info+strlen(info),"-y  LO suppression     iiqq (0000 to 6363) use 9999 for AT86RF215 internal value \r\n") ;
-	sprintf (info+strlen(info),"                       (if not set, looks for file SERIALNUMBER.mjo) \r\n") ;
-	sprintf (info+strlen(info),"                       (first in /home/pi/rpidatv/bin and then in the current directory \r\n") ;
+	sprintf (info+strlen(info),"                       (if not set, looks for a .mjo file for this Muntjac) \r\n") ;
+	sprintf (info+strlen(info),"                       (first in /home/pi/rpidatv/bin and then in the current directory) \r\n") ;
 	sprintf (info+strlen(info),"-z  secondary band     no parameter \r\n") ;
 	sprintf (info+strlen(info),"                       set -t, -g to transmit same data as main band \r\n") ;
 	sprintf (info+strlen(info),"                       optionally set -y, -f carrier \r\n") ;
