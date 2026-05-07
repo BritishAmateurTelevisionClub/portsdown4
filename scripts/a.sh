@@ -490,7 +490,7 @@ fi
 IDRPERIOD=100
 
 
-# Set the SDR Up-sampling rate and correct gain for Lime Modes
+# Set the SDR Up-sampling rate and correct gain
 case "$MODE_OUTPUT" in
   "LIMEMINI" | "LIMEUSB" | "LIMEDVB" | "JLIME" | "JEXPRESS")
 
@@ -584,7 +584,17 @@ case "$MODE_OUTPUT" in
     fi
   ;;
   "MUNTJAC")
-    MUNTJAC_GAINF=`echo - | awk '{print '$MUNTJAC_GAIN' / 100}'`
+    # Force 3-digit Muntjac gain (x.xx)
+    if [ "$MUNTJAC_GAIN" -eq "0" ]; then
+      MUNTJAC_GAINF="0.00"
+    elif [ "$MUNTJAC_GAIN" -eq "10" ]; then
+      MUNTJAC_GAINF="0.10"
+    elif [ "$MUNTJAC_GAIN" -eq "20" ]; then
+      MUNTJAC_GAINF="0.20"
+    else
+      MUNTJAC_GAINF=`echo - | awk '{print '$MUNTJAC_GAIN' / 100}'`
+    fi
+
     UPSAMPLE=2
   ;;
 esac

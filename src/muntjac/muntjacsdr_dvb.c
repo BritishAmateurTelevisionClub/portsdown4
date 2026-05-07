@@ -1,24 +1,23 @@
+// Muntjac4 for Raspberry Pi
+
 /*  Muntjac-4 - a DVB-S2 driver for the Muntjac SDR
     Copyright (C) 2026  Brian Jordan G4EWJ
-
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-// Muntjac4 for Raspberry Pi
-
 #define VERSIONX 	"muntjacsdr_dvb"
-#define VERSIONX2	"1v0m"
+///#define VERSIONX2	"1v0b"
+
+#define VERSIONX2	"1v0r"
 
 /*
 	ensure panic frames have at least 4 packets for MiniTioune 
@@ -35,6 +34,8 @@
 	correct -x and use for mixer power
 	add new mixing ranges for 23cm
 	correct 2m mixing range
+	enforce 0.xx for power
+	enforce 0.xx for mixer power
 */
 
 #include <stdio.h>
@@ -1186,6 +1187,14 @@ int main (int argc, char *argv[])
 		{
 			argindex++ ;
 			temp = (int) (atof (argv[argindex]) * 100) ;
+
+			sprintf (temps, "%4.2f", ((float) temp) / 100) ;
+			if (strcmp(temps, argv[argindex]) != 0)
+			{
+				sprintf (info+strlen(info), "Power must be in the format 0.xx \r\n") ;
+				temp = -1 ;
+			}
+			
 			if (temp > 31 || temp < 0)
 			{
 				if (otherband != -1)
@@ -1295,6 +1304,14 @@ int main (int argc, char *argv[])
 		{																
 			argindex++ ;
 			temp = (int) (atof (argv[argindex]) * 100) ;
+
+            sprintf (temps, "%4.2f", ((float) temp) / 100) ;
+            if (strcmp(temps, argv[argindex]) != 0)
+            {
+                sprintf (info+strlen(info), "Power must be in the format 0.xx \r\n") ;
+                temp = -1 ;
+            }
+			
 			if (temp > 31 || temp < 0)
 			{
 				sprintf (info+strlen(info), "*Mixer power invalid* \r\n") ;
@@ -2621,6 +2638,7 @@ void* receive_routine (void* dummy)
 			receivesynchronised = 0 ;
             lseek (fhin, 0, SEEK_SET) ;
        	    status = 0 ;
+			firstpcr = 0 ;
         }
 		else 
 		{
@@ -3923,7 +3941,6 @@ void display_help()
 	sprintf (info+strlen(info),"-g  power              0.00 - 0.20 for DATV, 0.00-0.31 for carriers and sideband test \r\n") ;
 	sprintf (info+strlen(info),"                       the data sheet range is 0.00-0.31, giving a nominal +14dBm maximum in 1dB steps \r\n") ;
 	sprintf (info+strlen(info),"                       shoulders start to be visible above 0.10 \r\n") ;
-	sprintf (info+strlen(info),"                       note that 0.3 is power level 30! \r\n") ;
 	sprintf (info+strlen(info),"-h  this help file     exits after printing \r\n") ;
 	sprintf (info+strlen(info),"-i  input file         (default: /dev/stdin) \r\n") ;
 	sprintf (info+strlen(info),"-j  mode               decimal value - test modes including Chinese H.265 / H.264 encoder box \r\n") ;

@@ -9,6 +9,12 @@ if [ $? != 0 ]; then
   exit
 fi
 
+# Check that Portsdown is not already installed
+if [ -d /home/pi/rpidatv ]; then
+  echo "Portsdown already installed.  Use update instead."
+  exit
+fi
+
 # Check which source needs to be loaded
 GIT_SRC="BritishAmateurTelevisionClub"
 GIT_SRC_FILE=".portsdown_gitsrc"
