@@ -89,7 +89,6 @@ int wbuttonsize = 100;
 int hbuttonsize = 50;
 int rawX, rawY;
 int FinishedButton = 0;
-int i;
 bool freeze = false;
 bool frozen = false;
 bool activescan = false;
@@ -1994,6 +1993,7 @@ void wait_touch()
 
 void CalculateMarkers()
 {
+  int i;
   int maxy;
   int xformaxy = 0;
   int xsum = 0;
@@ -2913,6 +2913,7 @@ void RedrawDisplay()
 
 void *WaitButtonEvent(void * arg)
 {
+  int i;
   int  rawPressure;
   char ValueToSave[63];
 
@@ -3036,7 +3037,7 @@ void *WaitButtonEvent(void * arg)
         default:
           printf("Menu 1 Error\n");
       }
-      if(i != 8)
+      if ((i != 8) && (PortsdownExitRequested == true))
       {
         PortsdownExitRequested = false;
         Start_Highlights_Menu1();

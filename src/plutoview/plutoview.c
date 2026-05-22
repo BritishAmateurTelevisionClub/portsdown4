@@ -92,7 +92,6 @@ int wbuttonsize = 100;
 int hbuttonsize = 50;
 int rawX, rawY;
 int FinishedButton = 0;
-int i;
 bool freeze = false;
 bool frozen = false;
 bool activescan = false;
@@ -510,6 +509,7 @@ void ReadSavedParams()
 {
   char response[63] = "0";
   char param[63];
+  int i;
 
   GetConfigParam(PATH_CONFIG, "centrefreq", response);
   centrefreq = atoi(response);
@@ -2053,6 +2053,7 @@ void CalculateMarkers()
   int xformaxy = 0;
   int xsum = 0;
   int ysum = 0;
+  int i;
   int markersamples = 10;
   char markerlevel[31];
   char markerfreq[31];
@@ -2923,6 +2924,7 @@ void *WaitButtonEvent(void * arg)
 {
   int  rawPressure;
   char ValueToSave[63];
+  int i;
 
   for (;;)
   {
@@ -3044,12 +3046,14 @@ void *WaitButtonEvent(void * arg)
         default:
           printf("Menu 1 Error\n");
       }
-      if(i != 8)
+
+      if ((i != 8) && (PortsdownExitRequested == true))                
       {
         PortsdownExitRequested = false;
         Start_Highlights_Menu1();
         UpdateWindow();
       }
+
       continue;  // Completed Menu 1 action, go and wait for touch
     }
 
@@ -3701,9 +3705,10 @@ void *WaitButtonEvent(void * arg)
           break;
         case 2:                                            // Back to Full Range
           Range20dB = false;
+          SetConfigParam(PATH_CONFIG, "mode", "spectrum");
           CalcSpan();
           RedrawDisplay();
-          CurrentMenu=1;
+          CurrentMenu = 1;
           UpdateWindow();
           break;
         case 5:                                            // up
