@@ -1,3 +1,8 @@
+202605220
+Bugfix exit from test equipment apps with markers on
+Update to Muntjac 1v0u
+Add more Muntjac cal files
+
 202605070
 Correct Muntjac gain format
 

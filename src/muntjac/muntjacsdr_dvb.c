@@ -1,41 +1,56 @@
-// Muntjac4 for Raspberry Pi
 
-/*  Muntjac-4 - a DVB-S2 driver for the Muntjac SDR
+/*  
+	muntjacsdr_dvb - a DVB-S2 driver for the Muntjac SDR
     Copyright (C) 2026  Brian Jordan G4EWJ
+
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
+
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
+
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 */
+
+
+// Muntjac4 for Raspberry Pi
 
 #define VERSIONX 	"muntjacsdr_dvb"
 ///#define VERSIONX2	"1v0b"
 
-#define VERSIONX2	"1v0r"
+#define VERSIONX2	"1v0u"
 
 /*
-	ensure panic frames have at least 4 packets for MiniTioune 
-	prevent transmit routine from winding up a cpu
-	write all usb bytes at once
-	remove SR100
-	reset TEMPS before frequency band check
-	remove TESTCARD check in chinese mode
-	add LO calibration for tripling from 413.333 to 429.999
-	tidy up help output
-	correct -y error
-	put driver and pico versions into sdt
-	buffer 1.5s worth of frames before starting USB output
-	correct -x and use for mixer power
-	add new mixing ranges for 23cm
-	correct 2m mixing range
-	enforce 0.xx for power
-	enforce 0.xx for mixer power
+2026-04-23	1v0m
+					ensure panic frames have at least 4 packets for MiniTioune 
+					prevent transmit routine from winding up a cpu
+					write all usb bytes at once
+					remove SR100
+					reset TEMPS before frequency band check
+					remove TESTCARD check in chinese mode
+					add LO calibration for tripling from 413.333 to 429.999
+					tidy up help output
+					correct -y error
+					put driver and pico versions into sdt
+					buffer 1.5s worth of frames before starting USB output
+					correct -x and use for mixer power
+					add new mixing ranges for 23cm
+					correct 2m mixing range
+2026-04-27	1v0r
+					enforce 0.xx for power
+					enforce 0.xx for mixer power
+2026-05-21	1v0u
+					enable output routine to terminate when getting EAGAIN
+					extend range to 70.0-71.5
+					fix no SDT when -w provider used
+					allow 1000ms when collecting MJ messages when closing
+					fix floating execption in carrier modes
 */
 
 #include <stdio.h>
@@ -897,7 +912,7 @@ int main (int argc, char *argv[])
 				(tempu >= 1270e6 && tempu <= 1280.001e6) ||
 				(tempu >= 1244e6 && tempu <= 1250.001e6) ||
 				(tempu >= 144e6 && tempu <= 147.001e6)   ||
-				(tempu >= 70.5e6 && tempu <= 71.501e6)   ||
+				(tempu >= 70e6 && tempu <= 71.501e6)   ||
 				(tempu >= 50e6 && tempu <= 54.001e6)     ||  
 				(tempu >= 28e6 && tempu <= 30.001e6)
 			)
@@ -914,7 +929,7 @@ int main (int argc, char *argv[])
 					transvertmultiplier = -3 ;
 					tempu 				= tempu - transvertmultiplier * transvertotherfreq ;
 				}
-				else if (tempu >= 70.5e6 && tempu <= 71.501e6)
+				else if (tempu >= 70e6 && tempu <= 71.501e6)
 				{
 					transvertotherfreq 	= 805e6 ;
 					transvertmultiplier = -3 ;
@@ -2037,9 +2052,9 @@ int main (int argc, char *argv[])
 				strcpy (provider, "") ;
 			}
 			sprintf (provider+strlen(provider), "Muntjac4-%s-%s", muntjacpicoversion, VERSIONX2) ;
-			sdt_setup() ;
-			sprintf (provider, " ") ;
 		}
+		sdt_setup() ;
+		sprintf (provider, " ") ;
 	}
 	
 // apply local oscillator suppression settings from muntjac.mjo, if available
@@ -2278,21 +2293,21 @@ int main (int argc, char *argv[])
 			{
 				framing_thread_status = 1 ;							// start the framing thread
 			}
-		}
 
 // buffer 1.5s worth of frames before starting the USB output routine
 
-		utemp = packetspersecond / packetsperframe ;				// frames per second
-		utemp = utemp * 3 / 2 ;
+			utemp = packetspersecond / packetsperframe ;				// frames per second
+			utemp = utemp * 3 / 2 ;
 
-		do
-		{
-			temp = framesindexin - framesindexout ;
-			if (temp < 0)
+			do
 			{
-				temp += MAXFRAMES ;
-			}
-		} while (terminate == 0 && temp < utemp) ;
+				temp = framesindexin - framesindexout ;
+				if (temp < 0)
+				{
+					temp += MAXFRAMES ;
+				}
+			} while (terminate == 0 && temp < utemp) ;
+		}
 					
 		if (terminate == 0 && returncode == 0)
 		{
@@ -2465,7 +2480,7 @@ int main (int argc, char *argv[])
 				settingsrequestcountin++ ;
 				output_thread_status = 2 ;				// tell output thread to terminate
 				now = monotime_ms() ;
-				while (monotime_ms() - now < 500)		// wait for any messages from MJ
+				while (monotime_ms() - now < 1000)		// wait for any messages from MJ
 				{
 					if (mjinfoindexin != mjinfoindexout)
 					{
@@ -3096,7 +3111,6 @@ void* framing_routine (void* dummy)
 		{
 	       	status = dvbs2neon_control (STREAM0, CONTROL_SET_OUTPUT_BUFFER, (uint32) framesarray [framesindexin], 0) ;	// set buffer address
 		}
-///www
 
 		if (partfilledframe)
 		{
@@ -3142,6 +3156,7 @@ void* framing_routine (void* dummy)
 }
 
 //ttt
+//www
 
 void* transmit_routine (void* dummy)
 {
@@ -3194,6 +3209,8 @@ void* transmit_routine (void* dummy)
 
 			if (output_thread_status == 2)
 			{
+				memset (outputpointer, 0xff, 256) ;
+				outputpointer += 256 ;
 				memcpy (outputpointer, &eof, sizeof (eof)) ;				// send an EOF record		            
 	            outputpointer += sizeof (eof) ;
 				output_thread_status = 3 ;
@@ -3291,24 +3308,17 @@ void* transmit_routine (void* dummy)
 		bytestosend = outputpointer - usbtxbuff ;
 		if (bytestosend && holdoffactive == 0)
 		{
-////			printf ("<%d>\r\n", bytestosend) ;
-#if TEST
-			fh = open ("/home/pi/test1.mjd", O_WRONLY | O_APPEND) ;
-            status = write (fh, usbtxbuff, bytestosend) ;
-			close (fh) ;			
-			printf ("<%d>\r\n", status) ;
-#endif
 			outputpointer = usbtxbuff ;
-			while (bytestosend > 0)
-			{
+			while (bytestosend > 0 && (output_thread_status == 1 || output_thread_status == 3))
+			{			
 /*
-				if (bytestosend < 8192)
+				if (bytestosend < 1024)
 				{
 					utemp = bytestosend ;
 				}
 				else
 				{
-					utemp = 8192 ;
+					utemp = 1024 ;
 	            }
 */
 	            status = write (mjfd, outputpointer, bytestosend) ;
@@ -3319,7 +3329,7 @@ void* transmit_routine (void* dummy)
 	            }
 	            else if (errno == EAGAIN)
 	            {
-	            	usleep (1000) ;
+	            	usleep (100) ;
 	            }
 	            else
 	            {
@@ -3329,11 +3339,6 @@ void* transmit_routine (void* dummy)
 					output_thread_status = 4 ;
 					break ;
 	            }
-			}
-
-			if (output_thread_status == 4)
-			{
-////				continue ;
 			}
 		}
 		
@@ -3495,7 +3500,6 @@ void myexit()
 	exit (returncode) ;
 }
 
-//www
 
 uint8* modifyandstorepacket (uint8* packet)
 {
