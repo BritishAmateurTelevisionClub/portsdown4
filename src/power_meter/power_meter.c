@@ -76,7 +76,6 @@ int wbuttonsize = 100;
 int hbuttonsize = 50;
 int rawX, rawY;
 int FinishedButton = 0;
-int i;
 bool freeze = false;
 bool frozen = false;
 bool normalised = false;
@@ -1737,6 +1736,7 @@ void CalculateMarkers()
 //bool markeron = false;
 //int markermode = 7;       // 2 peak, 3, null, 4 man, 7 off
 
+  int i;
   int maxy;
   int xformaxy = 0;
   int xsum = 0;
@@ -2883,6 +2883,7 @@ void ChangeSensor(int button)
 
 void *WaitButtonEvent(void * arg)
 {
+  int i;
   int  rawPressure;
 
   for (;;)
@@ -2988,6 +2989,12 @@ void *WaitButtonEvent(void * arg)
           break;
         default:
           printf("Menu 1 Error\n");
+      }
+      if ((i != 7) && (PortsdownExitRequested == true))
+      {
+        PortsdownExitRequested = false;
+        Start_Highlights_Menu1();
+        UpdateWindow();
       }
       continue;  // Completed Menu 1 action, go and wait for touch
     }

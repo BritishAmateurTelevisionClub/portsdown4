@@ -74,7 +74,6 @@ char DisplayType[31] = "Element14_7";
 int wbuttonsize = 100;
 int hbuttonsize = 50;
 int rawX, rawY;
-int i;
 bool freeze = false;
 bool frozen = false;
 bool normalised = false;
@@ -125,6 +124,16 @@ bool DoLimeCal = false;
 int64_t LimeCalFreq;
 int LimeGain = 88;
 
+// Pluto Control
+int PlutoPwr = 10;
+bool PlutoCalibrated = false;
+bool PlutoCalRequired = true;
+bool PlutoOPOnRequested = false;
+bool PlutoOPOn = false;
+bool DoPlutoCal = false;
+bool PlutoRun = false;
+pthread_t thplutostream;        //
+
 int64_t DisplayFreq = 437000000;
 
 //Lime SDR Device structure, should be initialized to NULL
@@ -148,8 +157,86 @@ bool touchneedsinitialisation = true;
 char DisplayType[31];
 bool touchscreen_present = false;
 
-///////////////////////////////////////////// DATA HANDLING UTILITIES ////////////////////////
+//////////////////////////////////////////// FUNCTION PROTOTYPES ////////////////////////////
 
+void GetConfigParam(char *PathConfigFile, char *Param, char *Value);
+void SetConfigParam(char *PathConfigFile, char *Param, char *Value);
+int CheckWebCtlExists();
+void CheckConfigFile();
+void ReadSavedParams();
+void *WaitTouchscreenEvent(void * arg);
+void *WebClickListener(void * arg);
+void parseClickQuerystring(char *query_string, int *x_ptr, int *y_ptr);
+FFUNC touchscreenClick(ffunc_session_t * session);
+void initSource(int64_t DisplayFreq);
+void CalibrateSource();
+void setOutput(int64_t DisplayFreq);
+void *LimeStream(void * arg);
+void LimeOff();
+void *PlutoStream(void * arg);
+void PlutoOff();
+void do_snapcheck();
+int IsImageToBeChanged(int x,int y);
+void UpdateWeb();
+void Keyboard(char RequestText[64], char InitText[64], int MaxLength);
+int openTouchScreen(int NoDevice);
+int getTouchScreenDetails(int *screenXmin, int *screenXmax,int *screenYmin,int *screenYmax);
+void TransformTouchMap(int x, int y);
+int IsButtonPushed(int NbButton, int x, int y);
+int IsMenuButtonPushed(int x, int y);
+int InitialiseButtons();
+int AddButton(int x, int y, int w, int h);
+int ButtonNumber(int MenuIndex, int Button);
+int CreateButton(int MenuIndex, int ButtonPosition);
+int AddButtonStatus(int ButtonIndex, char *Text, color_t *Color);
+void AmendButtonStatus(int ButtonIndex, int ButtonStatusIndex, char *Text, color_t *Color);
+void DrawButton(int ButtonIndex);
+void SetButtonStatus(int ButtonIndex, int Status);
+int GetButtonStatus(int ButtonIndex);
+int getTouchSampleThread(int *rawX, int *rawY, int *rawPressure);
+int getTouchSample(int *rawX, int *rawY, int *rawPressure);
+void UpdateWindow();
+void wait_touch();
+void MsgBox4(char *message1, char *message2, char *message3, char *message4);
+void CalculateMarkers();
+void Normalise();
+void SetFreq(int button);
+void SetSpan(int button);
+void SetPoints(int button);
+void SetTitle();
+void SetNormLevel();
+void SetLimeGain();
+void SetPlutoPwr();
+void ChangeSensor(int button);
+void *WaitButtonEvent(void * arg);
+void Define_Menu1();
+void Start_Highlights_Menu1();
+void Define_Menu2();
+void Define_Menu3();
+void Define_Menu4();
+void Define_Menu5();
+void Start_Highlights_Menu5();
+void Define_Menu6();
+void Start_Highlights_Menu6();
+void Define_Menu7();
+void Start_Highlights_Menu7();
+void Define_Menu8();
+void Start_Highlights_Menu8();
+void Define_Menu9();
+void Start_Highlights_Menu9();
+void Define_Menu10();
+void Define_Menu11();
+void Define_Menu41();
+void DrawEmptyScreen();
+void DrawYaxisLabels();
+void DrawSettings();
+void DrawTrace(int xoffset, int prev2, int prev1, int current);
+int limit_y(int y_value);
+int fetchsensorreading();
+static void cleanexit(int calling_exit_code);
+static void terminate(int dummy);
+
+///////////////////////////////////////////// DATA HANDLING UTILITIES ////////////////////////
 
 /***************************************************************************//**
  * @brief Looks up the value of a Param in PathConfigFile and sets value
@@ -194,6 +281,7 @@ void GetConfigParam(char *PathConfigFile, char *Param, char *Value)
   fclose(fp);
 }
 
+
 /***************************************************************************//**
  * @brief sets the value of Param in PathConfigFile from a program variable
  *        Used to store the configuration in portsdown_config.txt
@@ -204,7 +292,6 @@ void GetConfigParam(char *PathConfigFile, char *Param, char *Value)
  *
  * @return void
 *******************************************************************************/
-
 
 void SetConfigParam(char *PathConfigFile, char *Param, char *Value)
 {
@@ -280,6 +367,24 @@ int CheckWebCtlExists()
 }
 
 
+void CheckConfigFile()
+{
+  char shell_command[255];
+  FILE *fp;
+  int r;
+
+  sprintf(shell_command, "grep -q 'plutopwr=' %s", PATH_SWEEPER_CONFIG);
+  fp = popen(shell_command, "r");
+  r = pclose(fp);
+  if (WEXITSTATUS(r) != 0)
+  {
+    printf("Updating Config File\n");
+    sprintf(shell_command, "echo plutopwr=10 >> %s", PATH_SWEEPER_CONFIG);
+    system(shell_command); 
+  } 
+}
+
+
 void ReadSavedParams()
 {
   char response[63] = "0";
@@ -320,6 +425,10 @@ void ReadSavedParams()
   strcpy(response, "88");  // this is the default level
   GetConfigParam(PATH_SWEEPER_CONFIG, "limegain", response);
   LimeGain = atoi(response);
+
+  strcpy(response, "10");  // this is the default level
+  GetConfigParam(PATH_SWEEPER_CONFIG, "plutopwr", response);
+  PlutoPwr = atoi(response);
 
   if (CheckWebCtlExists() == 0)  // Stops the GetConfig thowing an error on Portsdown 2020
   {
@@ -439,6 +548,11 @@ void initSource(int64_t DisplayFreq)
   {
     LimeRun = true;
     pthread_create (&thlimestream, NULL, &LimeStream, NULL);
+  }
+  if(strcmp(Source, "pluto") == 0)
+  {
+    PlutoRun = true;
+    pthread_create (&thplutostream, NULL, &LimeStream, NULL);
   }
 }
 
@@ -690,6 +804,7 @@ void *LimeStream(void * arg)
   return NULL;
 }
 
+
 void LimeOff()
 {
   if (LimeRun)
@@ -699,6 +814,24 @@ void LimeOff()
   }
 
   system("/home/pi/rpidatv/bin/limesdr_stopchannel");
+}
+
+
+void *PlutoStream(void * arg)
+{
+  return NULL;
+}
+
+
+void PlutoOff()
+{
+  if (PlutoRun)
+  {
+    PlutoRun = false;
+    pthread_join(thplutostream, NULL);
+  }
+
+  //system("/home/pi/rpidatv/bin/limesdr_stopchannel");
 }
 
 
@@ -767,6 +900,7 @@ void do_snapcheck()
   // Tidy up and display touch menu
   system("sudo killall fbi >/dev/null 2>/dev/null");  // kill any instance of fbi
 }
+
 
 int IsImageToBeChanged(int x,int y)
 {
@@ -1529,12 +1663,14 @@ int AddButtonStatus(int ButtonIndex, char *Text, color_t *Color)
   return Button->IndexStatus++;
 }
 
+
 void AmendButtonStatus(int ButtonIndex, int ButtonStatusIndex, char *Text, color_t *Color)
 {
   button_t *Button=&(ButtonArray[ButtonIndex]);
   strcpy(Button->Status[ButtonStatusIndex].Text, Text);
   Button->Status[ButtonStatusIndex].Color=*Color;
 }
+
 
 void DrawButton(int ButtonIndex)
 {
@@ -1877,6 +2013,7 @@ void CalculateMarkers()
 //bool markeron = false;
 //int markermode = 7;       // 2 peak, 3, null, 4 man, 7 off
 
+  int i;
   int maxy;
   int xformaxy = 0;
   //int xsum = 0;
@@ -1980,6 +2117,7 @@ void Normalise()
   SetButtonStatus(ButtonNumber(1, 4), 1);
   UpdateWindow();
 }
+
 
 void SetFreq(int button)
 {
@@ -2207,6 +2345,7 @@ void SetSpan(int button)
   freeze = false;
 }
 
+
 void SetPoints(int button)
 {
   char ValueToSave[63];
@@ -2252,6 +2391,7 @@ void SetPoints(int button)
   freeze = false;
 }
 
+
 void SetTitle()
 {
   char RequestText[64];
@@ -2295,6 +2435,7 @@ void SetTitle()
   DrawSettings();     // Start, Stop, Centre and Title
   freeze = false;
 }
+
 
 void SetNormLevel()
 {
@@ -2348,6 +2489,7 @@ void SetNormLevel()
   DrawSettings();     // Start, Stop, Ref level and Title
   freeze = false;
 }
+
 
 void SetLimeGain()
 {
@@ -2409,6 +2551,68 @@ void SetLimeGain()
 }
 
 
+void SetPlutoPwr()
+{
+  char RequestText[64];
+  char InitText[63];
+  bool IsValid = false;
+
+  char ValueToSave[63];
+  
+  // Stop the scan at the end of the current one and wait for it to stop
+  freeze = true;
+  while(! frozen)
+  {
+    usleep(10);                                   // wait till the end of the scan
+  }
+
+  // Define request string
+  strcpy(RequestText, "Enter new Pluto Power (level) (Range 0 to -70)");
+
+  // Define initial value 
+  snprintf(InitText, 10, "%d", PlutoPwr * -1);
+
+  while (IsValid == false)
+  {
+    Keyboard(RequestText, InitText, 4);
+    if (strlen(KeyboardReturn) == 0)
+    {
+      IsValid = false;
+    }
+    else
+    {
+      PlutoPwr = -1 * atoi(KeyboardReturn);
+      if ((PlutoPwr >= 0) && (PlutoPwr <= 70))
+      {
+        IsValid = true;
+      }
+      else
+      {
+        IsValid = false;
+      }
+    }
+  }
+  snprintf(ValueToSave, 63, "%d", PlutoPwr);
+  SetConfigParam(PATH_SWEEPER_CONFIG, "plutopwr", ValueToSave);
+  printf("PlutoPwr set to: %d\n", PlutoPwr);
+
+  // Set Pluto Power here
+
+//       if (LMS_SetNormalizedGain(device, LMS_CH_TX, 0, (float)LimeGain * 0.01) != 0)  // set gain to output level
+//          {
+//            printf("Error - unable to set Lime Gain\n");
+//          }
+
+
+  // Tidy up, paint around the screen and then unfreeze
+  wipeScreen(0, 0, 0);
+  DrawEmptyScreen();  // Required to set A value, which is not set in DrawTrace
+  DrawYaxisLabels();  // dB calibration on LHS
+  DrawSettings();     // Start, Stop, Ref level and Title
+  freeze = false;
+}
+
+
 void ChangeSensor(int button)
 {
   switch (button)
@@ -2438,6 +2642,7 @@ void ChangeSensor(int button)
 
 void *WaitButtonEvent(void * arg)
 {
+  int i;
   int  rawPressure;
 
   for (;;)
@@ -2541,6 +2746,14 @@ void *WaitButtonEvent(void * arg)
         default:
           printf("Menu 1 Error\n");
       }
+
+      if ((i != 7) && (PortsdownExitRequested == true))
+      {
+        PortsdownExitRequested = false;
+        Start_Highlights_Menu1();
+        UpdateWindow();
+      }
+
       continue;  // Completed Menu 1 action, go and wait for touch
     }
 
@@ -3158,7 +3371,10 @@ void *WaitButtonEvent(void * arg)
           normalised = false;
           UpdateWindow();
           break;
-        case 3:                                            // Set level for ADF4351
+        case 3:                                            // Set level for Pluto
+          SetPlutoPwr();
+          normalised = false;
+          UpdateWindow();
           break;
         case 4:                                            // 
           break;
@@ -3484,6 +3700,7 @@ void Define_Menu6()                                  // Sweeper Freq Menu
   AddButtonStatus(button, "Unfreeze", &Green);
 }
 
+
 void Start_Highlights_Menu6()
 {
   if (centrefreq == 145000)
@@ -3561,6 +3778,7 @@ void Define_Menu7()  // Sweeper Scan Width
   AddButtonStatus(button, "Unfreeze", &Green);
 }
 
+
 void Start_Highlights_Menu7()
 {
   char DisplayText[63] = "Keyboard^";
@@ -3611,6 +3829,7 @@ void Start_Highlights_Menu7()
   }
 }
 
+
 void Define_Menu8()  // Sweeper Plot Points
 {
   int button = 0;
@@ -3651,6 +3870,7 @@ void Define_Menu8()  // Sweeper Plot Points
   AddButtonStatus(button, "Freeze", &Blue);
   AddButtonStatus(button, "Unfreeze", &Green);
 }
+
 
 void Start_Highlights_Menu8()
 {
@@ -3825,8 +4045,8 @@ void Define_Menu11()  // Source Level
   button = CreateButton(11, 2);
   AddButtonStatus(button, "LimeSDR", &Blue);
 
-  //button = CreateButton(11, 3);
-  //AddButtonStatus(button, "AD4351", &Blue);
+  button = CreateButton(11, 3);
+  AddButtonStatus(button, "Pluto", &Blue);
 
   //button = CreateButton(11, 4);
   //AddButtonStatus(button, "Range", &Blue);
@@ -4104,8 +4324,6 @@ void Define_Menu41()
 }
 
 
-
-
 /////////////////////////////////////////// APPLICATION DRAWING //////////////////////////////////
 
 
@@ -4155,6 +4373,7 @@ void DrawEmptyScreen()
   }
 }
 
+
 void DrawYaxisLabels()
 {
   setForeColour(255, 255, 255);                    // White text
@@ -4171,6 +4390,7 @@ void DrawYaxisLabels()
   Text2(30, 116, "-70 dB", font_ptr);
   Text2(30,  66, "-80 dB", font_ptr);
 }
+
 
 void DrawSettings()
 {
@@ -4457,7 +4677,6 @@ int fetchsensorreading()
 }
 
 
-
 static void cleanexit(int calling_exit_code)
 {
   app_exit = true;
@@ -4587,6 +4806,7 @@ int main()
   
   Define_Menu41();
 
+  CheckConfigFile();
   ReadSavedParams();
 
   ContScan = true;
@@ -4604,11 +4824,26 @@ int main()
 
   initSource((int64_t)centrefreq * 1000);
 
-  LimeOPOnRequested = true;
-  while(LimeOPOn == false)
+  if (strcmp(Source, "lime") == 0)
   {
-    printf("Waiting for Tx calibration to finish...\n");
-    usleep(1000000);
+    // Check that there is a Lime here
+    LimeOPOnRequested = true;
+    while(LimeOPOn == false)
+    {
+      printf("Waiting for Lime calibration to finish...\n");
+      usleep(1000000);
+    }
+  }
+
+  if (strcmp(Source, "pluto") == 0)
+  {
+    // Check that there is a Pluto here
+    PlutoOPOnRequested = true;
+    while(PlutoOPOn == false)
+    {
+      printf("Waiting for Pluto calibration to finish...\n");
+      usleep(1000000);
+    }
   }
 
   while(app_exit == false)

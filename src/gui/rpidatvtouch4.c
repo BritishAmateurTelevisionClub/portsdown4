@@ -4038,7 +4038,7 @@ int RegisterMuntjac()
   pclose(fp);
 
   // Copy Muntjac cal file from source folder to bin folder
-  snprintf(CopyCommand, 500, "cp /home/pi/rpidatv/src/muntjac/%s.mjo /home/pi/rpidatv/bin/%s.mjo >/dev/null 2>/dev/null", MuntjacSerial, MuntjacSerial);
+  snprintf(CopyCommand, 500, "cp /home/pi/rpidatv/src/muntjac/cal_files/%s.mjo /home/pi/rpidatv/bin/%s.mjo >/dev/null 2>/dev/null", MuntjacSerial, MuntjacSerial);
   system(CopyCommand);
 
   // Check if Muntjac serial is already in /etc/udev/rules.d/99-usbserial.rules

@@ -107,7 +107,6 @@ int wbuttonsize = 100;
 int hbuttonsize = 50;
 int rawX, rawY;
 int FinishedButton = 0;
-int i;
 bool freeze = false;
 bool frozen = false;
 bool PeakPlot = false;
@@ -2448,6 +2447,7 @@ void RedrawDisplay()
 
 void *WaitButtonEvent(void * arg)
 {
+  int i;
   int  rawPressure;
 
   for (;;)
@@ -2543,7 +2543,7 @@ void *WaitButtonEvent(void * arg)
         default:
           printf("Menu 1 Error\n");
       }
-      if(i != 8)
+      if ((i != 8) && (PortsdownExitRequested == true))
       {
         PortsdownExitRequested = false;
         Start_Highlights_Menu1();

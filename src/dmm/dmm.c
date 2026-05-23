@@ -78,7 +78,6 @@ int wbuttonsize = 100;
 int hbuttonsize = 50;
 int rawX, rawY;
 int FinishedButton = 0;
-int i;
 bool freeze = false;
 bool frozen = false;
 bool activescan = false;
@@ -1626,6 +1625,7 @@ void CalculateMarkers()
 //bool markeron = false;
 //int markermode = 7;       // 2 peak, 3, null, 4 man, 7 off
 
+  int i;
   int maxy;
   int xformaxy = 0;
   int xsum = 0;
@@ -2063,6 +2063,7 @@ void ResetCSVFile()
 
 void *WaitButtonEvent(void * arg)
 {
+  int i;
   int  rawPressure;
 
   for (;;)
@@ -2162,7 +2163,7 @@ void *WaitButtonEvent(void * arg)
         default:
           printf("Menu 1 Error\n");
       }
-      if(i != 7)  // Cancel exit request
+      if ((i != 7) && (PortsdownExitRequested == true)) // Cancel exit request
       {
         PortsdownExitRequested = false;
         Start_Highlights_Menu1();
