@@ -10137,12 +10137,11 @@ void GreyOut11()
   }
 
   // For Muntjac
-  if (strcmp(CurrentModeOP, "MUNTJAC") == 0)
+  if (strcmp(CurrentModeOP, "MUNTJAC") == 0)  // Allow S2 QPSK, S2 8PSK and Carrier
   {
     SetButtonStatus(ButtonNumber(CurrentMenu, 2), 2); // grey-out 16APSK
     SetButtonStatus(ButtonNumber(CurrentMenu, 3), 2); // grey-out 32APSK
     SetButtonStatus(ButtonNumber(CurrentMenu, 5), 2); // grey-out DVB-S
-    SetButtonStatus(ButtonNumber(CurrentMenu, 6), 2); // grey-out Carrier
     SetButtonStatus(ButtonNumber(CurrentMenu, 7), 2); // grey-out DVB-T
     SetButtonStatus(ButtonNumber(CurrentMenu, 8), 0); // Show Pilots on/off
     SetButtonStatus(ButtonNumber(CurrentMenu, 9), 0); // Show Frames long/short
