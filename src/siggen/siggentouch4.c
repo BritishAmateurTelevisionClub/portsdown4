@@ -3464,7 +3464,7 @@ int plutotx(bool cal)
 
   if (strcmp(osc, "pluto") == 0)
   {
-    // Set the LO frequncy for USB operation
+    // Set the LO frequency for USB operation
     if((rc = iio_channel_attr_write_longlong(tx_lo, "frequency", freq - FCW)) < 0)
     {
       stderrandexit(NULL, rc, __LINE__);
@@ -6880,9 +6880,9 @@ void Define_Menu11()  // Control Panel
   AddButtonStatus(button, "QPSK Mod", &Red);
   AddButtonStatus(button, "QPSK Mod", &Grey);
   AddButtonStatus(button, "Cal Pluto", &Blue);
-  AddButtonStatus(button, "Cal Pluto" ,&Red);
+  AddButtonStatus(button, "Cal Pluto^Required" ,&Red);
   AddButtonStatus(button, "Cal Lime", &Blue);
-  AddButtonStatus(button, "Cal Lime" ,&Red);  //6
+  AddButtonStatus(button, "Cal Lime^Required" ,&Red);  //6
 
   button = CreateButton(11, 33);
   AddButtonStatus(button, "Exit", &Blue);
@@ -6895,7 +6895,7 @@ void Start_Highlights_Menu11()
   char OnText[63];
   char OffText[63];
   char osc_caption[13];
-  strncpy(osc_caption, osc_text, 10);
+  strcpyn(osc_caption, osc_text, 10);
   snprintf(OffText, 20, "START^%s", osc_caption);
   snprintf(OnText, 20, "%s^ON", osc_caption);
   AmendButtonStatus(ButtonNumber(11, 30), 0, OffText, &Blue);
@@ -6917,13 +6917,6 @@ void Start_Highlights_Menu11()
   {
     SetButtonStatus(ButtonNumber(11, 32), ModOn);
   }
-  else if ((strcmp(osc, "pluto") == 0) || (strcmp(osc, "pluto5") == 0))
-  {
-    if (GetButtonStatus(ButtonNumber(11, 32)) != 4)
-    {
-      SetButtonStatus(ButtonNumber(11, 32), 3);
-    }
-  }
   else if (strcmp(osc, "lime") == 0)
   {
     if ((LimeCalibrated) && !(LimeCalRequired))
@@ -6933,6 +6926,17 @@ void Start_Highlights_Menu11()
     else
     {
       SetButtonStatus(ButtonNumber(11, 32), 6);  // Red requires Cal
+    }
+  }
+  else if ((strcmp(osc, "pluto") == 0) || (strcmp(osc, "pluto5") == 0))
+  {
+    if (PlutoCalValid)
+    {
+      SetButtonStatus(ButtonNumber(11, 32), 3);  // Blue
+    }
+    else
+    {
+      SetButtonStatus(ButtonNumber(11, 32), 4);  // Red requires Cal
     }
   }
   else
