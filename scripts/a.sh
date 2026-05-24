@@ -584,6 +584,15 @@ case "$MODE_OUTPUT" in
     fi
   ;;
   "MUNTJAC")
+    # Equalise Carrier Mode Level for Muntjac
+    if [ "$MODE_INPUT" == "CARRIER" ]; then
+      if [ "$MUNTJAC_GAIN" -eq "0" ]; then
+        MUNTJAC_GAIN="0"
+      else
+        MUNTJAC_GAIN=`echo - | awk '{print ( '$MUNTJAC_GAIN' - 1 )}'`
+      fi
+    fi
+
     # Force 3-digit Muntjac gain (x.xx)
     if [ "$MUNTJAC_GAIN" -eq "0" ]; then
       MUNTJAC_GAINF="0.00"
@@ -1839,6 +1848,9 @@ fi
       let DIGITAL_GAIN=6  # To equalise levels with normal DVB-S2 +/- 2 dB
       $PATHRPI"/limesdr_dvb" -s 1000000 -f carrier -r 1 -m DVBS2 -c QPSK \
         -t "$FREQ_OUTPUT"e6 -g $LIME_GAINF -q $CAL $CUSTOM_FPGA -D $DIGITAL_GAIN -e $BAND_GPIO &
+      ;;
+      "MUNTJAC")
+        $PATHRPI"/muntjacsdr_dvb" -f carrier -t "$FREQ_OUTPUT"e6 -g $MUNTJAC_GAINF &
       ;;
       "PLUTO")
         # Put Pluto carrier code here
