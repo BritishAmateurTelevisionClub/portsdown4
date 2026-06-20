@@ -1,3 +1,6 @@
+202606200
+Correct libwebsockets install for MeteorViewer
+
 202605240
 Add carrier transmit mode for Muntjac
 
