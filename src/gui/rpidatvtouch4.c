@@ -5145,7 +5145,7 @@ void run_ook48()
   // Start OOK48 beacon
   system ("/home/pi/rpidatv/bin/ook48 &");
 
-  MsgBox4("OOK48 Beacon running", " ", "Touch screen to exit", "and stop beacon");
+  MsgBox4("OOK48 Beacon running on ADF4351", " ", "Touch screen to exit", "and stop beacon");
   wait_touch();
 
   // Kill the beacon
