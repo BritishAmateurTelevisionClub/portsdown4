@@ -9,7 +9,8 @@ cd /home/pi/rpidatv/src/meteorview
 
 # Download api if required
 if [ ! -f  SDRplay_RSP_API-ARM-3.09.1.run ]; then
-  wget https://www.sdrplay.com/software/SDRplay_RSP_API-ARM-3.09.1.run
+  wget "https://sdrplay.com/download/hardware-api-linux-32bit-unsupported/?wpdmdl=2341&refresh=6a87239f68e1f1787241375" -O SDRplay_RSP_API-ARM-3.09.1.run
+  # was wget https://www.sdrplay.com/software/SDRplay_RSP_API-ARM-3.09.1.run
 fi
 chmod +x SDRplay_RSP_API-ARM-3.09.1.run
 
