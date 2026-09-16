@@ -1,3 +1,7 @@
+202609163
+Bugfix WiringPi install
+Include new avc2ts
+
 202608200
 Update SDRplay api download address
 

@@ -81,7 +81,6 @@ echo "----- Installing Packages -----"
 echo "-------------------------------"
 
 sudo apt-get -y install git cmake libusb-1.0-0-dev libfftw3-dev libxcb-shape0 
-sudo apt-get -y install wiringpi                                         # Wiring pi depracated? 
 sudo apt-get -y install libx11-dev buffer libjpeg-dev indent 
 sudo apt-get -y install bc usbmount libvncserver-dev
 sudo apt-get -y install ttf-dejavu-core                                  # being depracated?
@@ -121,9 +120,16 @@ sudo apt-get -y install libhamlib-utils                                 # For IS
 pip3 install ephem requests                                             # For ISS tracker
 
 # Install WiringPi
-cd /home/pi
+cd ~
 git clone https://github.com/WiringPi/WiringPi.git
 cd WiringPi
+
+# Modify so that it installs on 32-bit buster
+cd wiringPi
+sed -i -e 's/\(\[\[gnu::packed\]\]\)//g' bcm_registers.h
+sed -i -e 's/\(\[\[gnu::packed\]\]\)//g' rp1_registers.h
+cd ~/WiringPi
+
 ./build debian
 
 # Read latest WiringPi version number and install it
