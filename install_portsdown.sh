@@ -426,6 +426,16 @@ sudo cp datvexpress16.ihx /lib/firmware/datvexpress/datvexpress16.ihx
 sudo cp datvexpressraw16.rbf /lib/firmware/datvexpress/datvexpressraw16.rbf
 cd /home/pi
 
+echo
+echo "-----------------------------------"
+echo "----- Installing dvb_t2_stack -----"
+echo "-----------------------------------"
+cd /home/pi/rpidatv/src/dvb_t2_stack
+make clean
+make -j $(nproc) PI4=1 dvb_t2_stack
+cp dvb_t2_stack /home/pi/rpidatv/bin/dvb_t2_stack
+cd /home/pi
+
 # Install LongMynd
 echo
 echo "--------------------------------------------"
@@ -545,8 +555,8 @@ echo "---------------------------------------"
 cd /home/pi/rpidatv/src/meteorview
 
 # Download api
-wget "https://sdrplay.com/download/hardware-api-linux-32bit-unsupported/?wpdmdl=2341&refresh=6a87239f68e1f1787241375" -O SDRplay_RSP_API-ARM-3.09.1.run
-# was wget https://www.sdrplay.com/software/SDRplay_RSP_API-ARM-3.09.1.run
+# was wget "https://sdrplay.com/download/hardware-api-linux-32bit-unsupported/?wpdmdl=2341&refresh=6a87239f68e1f1787241375" -O SDRplay_RSP_API-ARM-3.09.1.run
+wget https://www.sdrplay.com/software/SDRplay_RSP_API-ARM-3.09.1.run
 chmod +x SDRplay_RSP_API-ARM-3.09.1.run
 
 # Create file to trigger install on next reboot

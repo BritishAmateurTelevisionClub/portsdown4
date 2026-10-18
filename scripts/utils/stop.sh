@@ -30,6 +30,7 @@ sudo killall bandview          >/dev/null 2>/dev/null
 sudo killall CombiTunerExpress >/dev/null 2>/dev/null
 sudo killall dmm               >/dev/null 2>/dev/null
 sudo killall dvb_t_stack       >/dev/null 2>/dev/null
+sudo killall dvb_t2_stack      >/dev/null 2>/dev/null
 sudo killall dvb2iq            >/dev/null 2>/dev/null
 sudo killall ffmpeg            >/dev/null 2>/dev/null
 sudo killall keyedtx           >/dev/null 2>/dev/null

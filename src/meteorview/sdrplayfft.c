@@ -53,10 +53,10 @@ extern bool app_exit;
 extern void ShowRemoteCaption();
 extern void ShowConnectFail();
 extern void ShowStartFail();
+extern void ShowInternetFail();
 extern void UpdateWeb();
 
 extern bool NewGain;                 // Set to true to indicate that gain needs changing
-//extern float gain;                   // Gain (0 - 21) from main
 extern int RFgain;
 extern int IFgain;
 extern int remoteRFgain;
@@ -149,6 +149,46 @@ static int restart_count;
 
 void fft_to_buffer();
 int legal_gain(int demanded_Gain);
+
+
+/***************************************************************************//**
+ * @brief Checks whether a ping to google on 8.8.4.4 works
+ *
+ * @param nil
+ *
+ * @return 0 if it pings OK, 1 if it doesn't
+*******************************************************************************/
+
+int CheckGoogle()
+{
+  FILE *fp;
+  char response[127];
+
+  /* Open the command for reading. */
+  fp = popen("ping 8.8.4.4 -c1 | head -n 5 | tail -n 1 | grep -o \"1 received,\" | head -c 11", "r");
+  if (fp == NULL) {
+    printf("Failed to run command\n" );
+    exit(1);
+  }
+
+  /* Read the output a line at a time - output it. */
+  while (fgets(response, 12, fp) != NULL)
+  {
+    printf("%s", response);
+  }
+  //  printf("%s", response);
+  /* close */
+  pclose(fp);
+  if (strcmp (response, "1 received,") == 0)
+  {
+    return 0;
+  }
+  else
+  {
+    return 1;
+  }
+}
+
 
 void setup_fft(void)
 {
@@ -1130,8 +1170,16 @@ void *sdrplay_fft_thread(void *arg) {
   //
   //("\n");
 
+  // If streaming and no internet display error.  Keep checking at 1 second intervals
 
-  while (transport_started != 0)
+  while ((strcmp(destination, "remote") == 0) && (CheckGoogle() != 0))
+  {
+    ShowInternetFail();
+    usleep (100000);
+  }
+  
+
+  while ((transport_started != 0)  && (strcmp(destination, "remote") == 0))
   {
     transport_started =  transport_init();
 

@@ -59,6 +59,7 @@ MODE_OUTPUT=$(get_config_var modeoutput $PCONFIGFILE)
   sudo killall limesdr_dvb > /dev/null 2>/dev/null
   sudo killall sox >/dev/null 2>/dev/null
   sudo killall dvb_t_stack > /dev/null 2>/dev/null
+  sudo killall dvb_t2_stack > /dev/null 2>/dev/null
   sudo killall dvb_t_stack_lime > /dev/null 2>/dev/null
   sudo killall /home/pi/rpidatv/bin/dvb_t_stack_lime > /dev/null 2>/dev/null
 

@@ -540,7 +540,7 @@ cp muntjacsdr_dvb /home/pi/rpidatv/bin/             # Executable
 cd /home/pi
 
 
-DisplayUpdateMsg "Step 7 of 10\nCompiling Portsdown SW\nDVB-T Transmitter\nXXXXXX----"
+DisplayUpdateMsg "Step 7 of 10\nCompiling Portsdown SW\nDVB-T/T2 Transmitter\nXXXXXX----"
 
 echo
 echo "--------------------------------"
@@ -555,6 +555,16 @@ cp dvb_t_stack /home/pi/rpidatv/bin/dvb_t_stack
 cd /home/pi/rpidatv/src/dvb_t_stack
 sudo cp datvexpress16.ihx /lib/firmware/datvexpress/datvexpress16.ihx
 sudo cp datvexpressraw16.rbf /lib/firmware/datvexpress/datvexpressraw16.rbf
+cd /home/pi
+
+echo
+echo "---------------------------------"
+echo "----- Updating dvb_t2_stack -----"
+echo "---------------------------------"
+cd /home/pi/rpidatv/src/dvb_t2_stack
+make clean
+make -j $(nproc) PI4=1 dvb_t2_stack
+cp dvb_t2_stack /home/pi/rpidatv/bin/dvb_t2_stack
 cd /home/pi
 
 echo
@@ -678,7 +688,7 @@ if [ ! -f  /usr/local/include/sdrplay_api.h ]; then
   touch /home/pi/rpidatv/.post-install_actions
   cd /home/pi
 
-else            # api is intalled, so try to compile SDRplay apps
+else            # api is installed, so try to compile SDRplay apps
   echo
   echo "----------------------------------"
   echo "----- Compiling MeteorViewer -----"

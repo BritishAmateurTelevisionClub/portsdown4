@@ -26,9 +26,11 @@ sudo killall rpidatvgui >/dev/null 2>/dev/null
 # Kill the current process if it is running
 sudo killall meteorview >/dev/null 2>/dev/null
 
+echo Compiling MeteorViewer
+
 cd /home/pi/rpidatv/src/meteorview
 touch meteorview.c
-make
+make -j 4 -O
 if [ $? != "0" ]; then
   echo
   echo "failed install"

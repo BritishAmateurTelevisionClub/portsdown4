@@ -196,7 +196,7 @@ char TabModeOPtext[15][31]={"Portsdown", " Ugly ", "Express", "Lime USB", "BATC^
 char TabAtten[4][15] = {"NONE", "PE4312", "PE43713", "HMC1119"};
 char CurrentModeOP[31] = "QPSKRF";
 char CurrentModeOPtext[31] = " UGLY ";
-char TabTXMode[7][255] = {"DVB-S", "Carrier", "S2QPSK", "8PSK", "16APSK", "32APSK", "DVB-T"};
+char TabTXMode[8][255] = {"DVB-S", "Carrier", "S2QPSK", "8PSK", "16APSK", "32APSK", "DVB-T", "DVB-T2"};
 char CurrentTXMode[255] = "DVB-S";
 char CurrentPilots[7] = "off";
 char CurrentFrames[7] = "long";
@@ -608,8 +608,6 @@ int CheckWifiEnabled();
 int CheckWifiConnection(char Network_SSID[63]);
 void WiFiConfig(int NoButton);
 void GreyOut1();
-void GreyOutReset11();
-void GreyOut11();
 void GreyOut12();
 void GreyOut15();
 void GreyOutReset25();
@@ -619,6 +617,8 @@ void GreyOut42();
 void GreyOutReset44();
 void GreyOut44();
 void GreyOut45();
+void GreyOut49();
+void GreyOutReset49();
 void SelectInGroup(int StartButton,int StopButton,int NoButton,int Status);
 void SelectInGroupOnMenu(int Menu, int StartButton, int StopButton, int NumberButton, int Status);
 void SelectTX(int NoButton);
@@ -768,8 +768,6 @@ void Define_Menu9();
 void Start_Highlights_Menu9();
 void Define_Menu10();
 void Start_Highlights_Menu10();
-void Define_Menu11();
-void Start_Highlights_Menu11();
 void Define_Menu12();
 void Start_Highlights_Menu12();
 void Define_Menu13();
@@ -843,6 +841,8 @@ void Define_Menu47();
 void Start_Highlights_Menu47();
 void Define_Menu48();
 void Start_Highlights_Menu48();
+void Define_Menu49();
+void Start_Highlights_Menu49();
 void Define_Menu51();
 void Start_Highlights_Menu51();
 void Define_Menu41();
@@ -8949,7 +8949,7 @@ void EnforceValidFEC()
   char Value[7];
 
   if ((strcmp(CurrentTXMode, TabTXMode[0]) == 0) || (strcmp(CurrentTXMode, TabTXMode[1]) == 0)
-   || (strcmp(CurrentTXMode, TabTXMode[6]) == 0)) // Carrier, DVB-S or DVB-T
+   || (strcmp(CurrentTXMode, TabTXMode[6]) == 0)|| (strcmp(CurrentTXMode, TabTXMode[7]) == 0)) // Carrier, DVB-S, DVB-T, or DVB-T2
   {
     if (fec > 10)  // DVB-S2 FEC selected for DVB-S or DVB-T transmit mode
     {
@@ -10079,7 +10079,7 @@ void GreyOut1()
   }
 }
 
-void GreyOutReset11()
+void GreyOutReset49()
 {
   SetButtonStatus(ButtonNumber(CurrentMenu, 0), 0); // S2 QPSK
   SetButtonStatus(ButtonNumber(CurrentMenu, 1), 0); // 8PSK
@@ -10087,9 +10087,10 @@ void GreyOutReset11()
   SetButtonStatus(ButtonNumber(CurrentMenu, 3), 0); // 32APSK
   SetButtonStatus(ButtonNumber(CurrentMenu, 6), 0); // carrier
   SetButtonStatus(ButtonNumber(CurrentMenu, 7), 0); // Show DVB-T
+  SetButtonStatus(ButtonNumber(CurrentMenu, 12), 0); // Show DVB-T2
 }
 
-void GreyOut11()
+void GreyOut49()
 {
   if ((strcmp(CurrentModeOP, "LIMEUSB") != 0)
    && (strcmp(CurrentModeOP, "LIMEMINI") != 0)
@@ -10134,6 +10135,7 @@ void GreyOut11()
     SetButtonStatus(ButtonNumber(CurrentMenu, 8), 2); // grey-out Pilots on/off
     SetButtonStatus(ButtonNumber(CurrentMenu, 9), 2); // grey-out Frames long/short
     SetButtonStatus(ButtonNumber(CurrentMenu, 7), 0); // Show DVB-T
+    SetButtonStatus(ButtonNumber(CurrentMenu, 12), 0); // Show DVB-T2
   }
 
   // For Muntjac
@@ -10143,6 +10145,7 @@ void GreyOut11()
     SetButtonStatus(ButtonNumber(CurrentMenu, 3), 2); // grey-out 32APSK
     SetButtonStatus(ButtonNumber(CurrentMenu, 5), 2); // grey-out DVB-S
     SetButtonStatus(ButtonNumber(CurrentMenu, 7), 2); // grey-out DVB-T
+    SetButtonStatus(ButtonNumber(CurrentMenu, 12), 2); // grey-out DVB-T2
     SetButtonStatus(ButtonNumber(CurrentMenu, 8), 0); // Show Pilots on/off
     SetButtonStatus(ButtonNumber(CurrentMenu, 9), 0); // Show Frames long/short
   }
@@ -10153,6 +10156,7 @@ void GreyOut11()
    || (strcmp(CurrentModeOP, "JEXPRESS") == 0)) // so selection is not DVB-T-capable
   {
     SetButtonStatus(ButtonNumber(CurrentMenu, 7), 2); // Grey-out DVB-T
+    SetButtonStatus(ButtonNumber(CurrentMenu, 12), 2); // Grey-out DVB-T2
   }
 }
 
@@ -10398,15 +10402,23 @@ void SelectTX(int NoButton)  // TX RF Output Mode
   }
   else
   {
-    if (NoButton > 3)  // Correct numbering
+    if (NoButton == 12) // DVB-T2
     {
-      NoButton = NoButton - 5;
+      NoButton = 7;
     }
     else
     {
-      NoButton = NoButton + 2;
+      if (NoButton > 3)  // Correct numbering
+      {
+        NoButton = NoButton - 5;
+      }
+      else
+      {
+        NoButton = NoButton + 2;
+      }
     }
   }
+
   strcpy(CurrentTXMode, TabTXMode[NoButton]);
   char Param[15]="modulation";
   SetConfigParam(PATH_PCONFIG, Param, CurrentTXMode);
@@ -12488,6 +12500,7 @@ void TransmitStop()
   system("sudo killall sox >/dev/null 2>/dev/null");
   system("sudo killall arecord >/dev/null 2>/dev/null");
   system("sudo killall dvb_t_stack >/dev/null 2>/dev/null");
+  system("sudo killall dvb_t2_stack >/dev/null 2>/dev/null");
   system("sudo killall /home/pi/rpidatv/bin/dvb_t_stack_lime > /dev/null 2>/dev/null");
   system("sudo killall /home/pi/rpidatv/bin/dvb_t_stack_limeusb > /dev/null 2>/dev/null");
 
@@ -12521,6 +12534,7 @@ void TransmitStop()
   // And make sure rpidatv has been stopped (required for brief transmit selections)
   system("sudo killall -9 rpidatv >/dev/null 2>/dev/null");
   system("sudo killall -9 dvb_t_stack >/dev/null 2>/dev/null");
+  system("sudo killall -9 dvb_t2_stack >/dev/null 2>/dev/null");
 
   // Ensure PTT off.  Required for carrier mode
   pinMode(GPIO_PTT, OUTPUT);
@@ -20811,7 +20825,7 @@ void waituntil(int w,int h)
           setBackColour(0, 0, 0);
           clearScreen();
           if ((strcmp(CurrentTXMode, TabTXMode[0]) == 0) || (strcmp(CurrentTXMode, TabTXMode[1]) == 0)
-           || (strcmp(CurrentTXMode, TabTXMode[6]) == 0)) // Carrier, DVB-S or DVB-T
+           || (strcmp(CurrentTXMode, TabTXMode[6]) == 0) || (strcmp(CurrentTXMode, TabTXMode[7]) == 0)) // Carrier, DVB-S or DVB-T/T2
           {
             printf("MENU 18 \n");       // FEC
             CurrentMenu=18;
@@ -20843,11 +20857,11 @@ void waituntil(int w,int h)
           UpdateWindow();
           break;
         case 15:
-          printf("MENU 11 \n");        // Modulation
-          CurrentMenu=11;
+          printf("MENU 49 \n");        // Modulation
+          CurrentMenu = 49;
           setBackColour(0, 0, 0);
           clearScreen();
-          Start_Highlights_Menu11();
+          Start_Highlights_Menu49();
           UpdateWindow();
           break;
         case 16:
@@ -22268,77 +22282,6 @@ void waituntil(int w,int h)
         }
         UpdateWindow();
         continue;   // Completed Menu 10 action, go and wait for touch
-      }
-
-      if (CurrentMenu == 11)  // Menu 11 TX RF Output Mode
-      {
-        printf("Button Event %d, Entering Menu 11 Case Statement\n",i);
-        switch (i)
-        {
-        case 4:                               // Cancel
-          SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 1);
-          printf("SR Cancel\n");
-          break;
-        case 5:                               // DVB-S
-          SelectTX(i);
-          printf("DVB-S\n");
-          break;
-        case 6:                               // Carrier
-          SelectTX(i);
-          printf("Carrier\n");
-          break;
-        case 7:                               // DVB-T
-          SelectTX(i);
-          printf("DVB-T\n");
-          CurrentMenu = 16;                  // Set the guard interval and QAM
-          printf("MENU 16 \n");              // on DVB-T selection
-          setBackColour(0, 0, 0);
-          clearScreen();
-          Start_Highlights_Menu16();
-          UpdateWindow();
-          break;
-        case 0:                               // QPSK
-          SelectTX(i);
-          printf("S2 QPSK\n");
-          break;
-        case 1:                               // S2 8PSK
-          SelectTX(i);
-          printf("S2 8PSK\n");
-          break;
-        case 2:                               // S2 16APSK
-          SelectTX(i);
-          printf("S2 16APSK\n");
-          break;
-        case 3:                               // S2 32APSK
-          SelectTX(i);
-          printf("S2 32APSK\n");
-          break;
-        case 8:                               // Pilots off/on
-          SelectPilots();
-          printf("Toggle Pilots\n");
-          break;
-        case 9:                               // Frames Long/short
-          //SelectFrames();                   // Not yet working
-          printf("Toggle Frames\n");
-          break;
-
-        default:
-          printf("Menu 11 Error\n");
-        }
-        if (i != 7)   // Skip if DVB-T guard/QAM needs to be set
-        {
-          Start_Highlights_Menu11();
-          UpdateWindow();
-          usleep(500000);
-          SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 0); // Reset cancel (even if not selected)
-          printf("Returning to MENU 1 from Menu 11\n");
-          CurrentMenu=1;
-          setBackColour(255, 255, 255);
-          clearScreen();
-          Start_Highlights_Menu1();
-          UpdateWindow();
-        }
-        continue;   // Completed Menu 11 action, go and wait for touch
       }
 
       if (CurrentMenu == 12)  // Menu 12 Encoding
@@ -24637,6 +24580,87 @@ void waituntil(int w,int h)
         }
         continue;   // Completed Menu 48 action, go and wait for touch
       }
+
+      if (CurrentMenu == 49)  // Menu 49 TX RF Output Mode
+      {
+        printf("Button Event %d, Entering Menu 49 Case Statement\n",i);
+        switch (i)
+        {
+        case 4:                               // Cancel
+          SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 1);
+          printf("SR Cancel\n");
+          break;
+        case 5:                               // DVB-S
+          SelectTX(i);
+          printf("DVB-S\n");
+          break;
+        case 6:                               // Carrier
+          SelectTX(i);
+          printf("Carrier\n");
+          break;
+        case 7:                               // DVB-T
+          SelectTX(i);
+          printf("DVB-T\n");
+          CurrentMenu = 16;                  // Set the guard interval and QAM
+          printf("MENU 16 \n");              // on DVB-T selection
+          setBackColour(0, 0, 0);
+          clearScreen();
+          Start_Highlights_Menu16();
+          UpdateWindow();
+          break;
+        case 0:                               // QPSK
+          SelectTX(i);
+          printf("S2 QPSK\n");
+          break;
+        case 1:                               // S2 8PSK
+          SelectTX(i);
+          printf("S2 8PSK\n");
+          break;
+        case 2:                               // S2 16APSK
+          SelectTX(i);
+          printf("S2 16APSK\n");
+          break;
+        case 3:                               // S2 32APSK
+          SelectTX(i);
+          printf("S2 32APSK\n");
+          break;
+        case 8:                               // Pilots off/on
+          SelectPilots();
+          printf("Toggle Pilots\n");
+          break;
+        case 9:                               // Frames Long/short
+          //SelectFrames();                   // Not yet working
+          printf("Toggle Frames\n");
+          break;
+        case 12:                              // DVB-T2
+          SelectTX(i);
+          printf("DVB-T2\n");
+          CurrentMenu = 16;                  // Set the guard interval and QAM
+          printf("MENU 16 \n");              // on DVB-T selection
+          setBackColour(0, 0, 0);
+          clearScreen();
+          Start_Highlights_Menu16();
+          UpdateWindow();
+          break;
+        default:
+          printf("Menu 49 Error\n");
+        }
+        if ((i != 7) && (i != 12))   // Skip if DVB-T/T2 guard/QAM needs to be set
+        {
+          Start_Highlights_Menu49();
+          UpdateWindow();
+          usleep(500000);
+          SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 0); // Reset cancel (even if not selected)
+          printf("Returning to MENU 1 from Menu 49\n");
+          CurrentMenu = 1;
+          setBackColour(255, 255, 255);
+          clearScreen();
+          Start_Highlights_Menu1();
+          UpdateWindow();
+        }
+        continue;   // Completed Menu 49 action, go and wait for touch
+      }
+
 
       if (CurrentMenu == 51)  // Menu 51 ISS Rotator Control
       {
@@ -27154,131 +27178,6 @@ void Start_Highlights_Menu10()
   }
 }
 
-void Define_Menu11()
-{
-  int button;
-
-  strcpy(MenuTitle[11], "Modulation Selection Menu (11)"); 
-
-  // Bottom Row, Menu 11
-
-  button = CreateButton(11, 4);
-  AddButtonStatus(button, "Cancel", &DBlue);
-  AddButtonStatus(button, "Cancel", &LBlue);
-
-  button = CreateButton(11, 0);
-  AddButtonStatus(button, "DVB-S2^QPSK", &Blue);
-  AddButtonStatus(button, "DVB-S2^QPSK", &Green);
-  AddButtonStatus(button, "DVB-S2^QPSK", &Grey);
-
-  button = CreateButton(11, 1);
-  AddButtonStatus(button, "DVB-S2^8 PSK", &Blue);
-  AddButtonStatus(button, "DVB-S2^8 PSK", &Green);
-  AddButtonStatus(button, "DVB-S2^8 PSK", &Grey);
-
-  button = CreateButton(11, 2);
-  AddButtonStatus(button, "DVB-S2^16 APSK", &Blue);
-  AddButtonStatus(button, "DVB-S2^16 APSK", &Green);
-  AddButtonStatus(button, "DVB-S2^16 APSK", &Grey);
-
-  button = CreateButton(11, 3);
-  AddButtonStatus(button, "DVB-S2^32 APSK", &Blue);
-  AddButtonStatus(button, "DVB-S2^32 APSK", &Green);
-  AddButtonStatus(button, "DVB-S2^32 APSK", &Grey);
-
-  // 2nd Row, Menu 11
-
-  button = CreateButton(11, 5);
-  AddButtonStatus(button, "DVB-S^QPSK", &Blue);
-  AddButtonStatus(button, "DVB-S^QPSK", &Green);
-  AddButtonStatus(button, "DVB-S^QPSK", &Grey);
-
-  button = CreateButton(11, 6);
-  AddButtonStatus(button, "Carrier", &Blue);
-  AddButtonStatus(button, "Carrier", &Green);
-  AddButtonStatus(button, "Carrier", &Grey);
-
-  button = CreateButton(11, 7);
-  AddButtonStatus(button, "DVB-T", &Blue);
-  AddButtonStatus(button, "DVB-T", &Green);
-  AddButtonStatus(button, "DVB-T", &Grey);
-
-  button = CreateButton(11, 8);
-  AddButtonStatus(button, "Pilots^Off", &LBlue);
-  AddButtonStatus(button, "Pilots^Off", &Green);
-  AddButtonStatus(button, "Pilots^Off", &Grey);
-
-  button = CreateButton(11, 9);
-  AddButtonStatus(button, "Frames^Long", &LBlue);
-  AddButtonStatus(button, "Frames^Long", &Green);
-  AddButtonStatus(button, "Frames^Long", &Grey);
-}
-
-void Start_Highlights_Menu11()
-{
-  char vcoding[256];
-  char vsource[256];
-
-  ReadModeInput(vcoding, vsource);
-
-  GreyOutReset11();
-  if(strcmp(CurrentTXMode, TabTXMode[0])==0)
-  {
-    SelectInGroupOnMenu(11, 5, 7, 5, 1);
-    SelectInGroupOnMenu(11, 0, 3, 5, 1);
-  }
-  if(strcmp(CurrentTXMode, TabTXMode[1])==0)
-  {
-    SelectInGroupOnMenu(11, 5, 7, 6, 1);
-    SelectInGroupOnMenu(11, 0, 3, 6, 1);
-  }
-  if(strcmp(CurrentTXMode, TabTXMode[2])==0)
-  {
-    SelectInGroupOnMenu(11, 5, 7, 0, 1);
-    SelectInGroupOnMenu(11, 0, 3, 0, 1);
-  }
-  if(strcmp(CurrentTXMode, TabTXMode[3])==0)
-  {
-    SelectInGroupOnMenu(11, 5, 7, 1, 1);
-    SelectInGroupOnMenu(11, 0, 3, 1, 1);
-  }
-  if(strcmp(CurrentTXMode, TabTXMode[4])==0)
-  {
-    SelectInGroupOnMenu(11, 5, 7, 2, 1);
-    SelectInGroupOnMenu(11, 0, 3, 2, 1);
-  }
-  if(strcmp(CurrentTXMode, TabTXMode[5])==0)
-  {
-    SelectInGroupOnMenu(11, 5, 7, 3, 1);
-    SelectInGroupOnMenu(11, 0, 3, 3, 1);
-  }
-  if(strcmp(CurrentTXMode, TabTXMode[6])==0)
-  {
-    SelectInGroupOnMenu(11, 5, 7, 7, 1);
-    SelectInGroupOnMenu(11, 0, 3, 7, 1);
-  }
-  if(strcmp(CurrentPilots, "on") == 0)
-  {
-    AmendButtonStatus(ButtonNumber(11, 8), 0, "Pilots^On", &LBlue);
-    AmendButtonStatus(ButtonNumber(11, 8), 2, "Pilots^On", &Grey);
-  }
-  else
-  {
-    AmendButtonStatus(ButtonNumber(11, 8), 0, "Pilots^Off", &LBlue);
-    AmendButtonStatus(ButtonNumber(11, 8), 2, "Pilots^Off", &Grey);
-  }
-  if(strcmp(CurrentFrames, "short") == 0)
-  {
-    AmendButtonStatus(ButtonNumber(11, 9), 0, "Frames^Short", &LBlue);
-    AmendButtonStatus(ButtonNumber(11, 9), 2, "Frames^Short", &Grey);
-  }
-  else
-  {
-    AmendButtonStatus(ButtonNumber(11, 9), 0, "Frames^Long", &LBlue);
-    AmendButtonStatus(ButtonNumber(11, 9), 2, "Frames^Long", &Grey);
-  }
-  GreyOut11();
-}
 
 void Define_Menu12()
 {
@@ -27607,7 +27506,7 @@ void Define_Menu16()
 {
   int button;
 
-  strcpy(MenuTitle[16], "DVB-T Parameters Menu (16)"); 
+  strcpy(MenuTitle[16], "DVB-T/T2 Parameters Menu (16)"); 
 
   // Bottom Row, Menu 16
 
@@ -30475,6 +30374,152 @@ void Start_Highlights_Menu48()
 }
 
 
+void Define_Menu49()
+{
+  int button;
+
+  strcpy(MenuTitle[49], "Modulation Selection Menu (49)"); 
+
+  // Bottom Row, Menu 49
+
+  button = CreateButton(49, 4);
+  AddButtonStatus(button, "Cancel", &DBlue);
+  AddButtonStatus(button, "Cancel", &LBlue);
+
+  button = CreateButton(49, 0);
+  AddButtonStatus(button, "DVB-S2^QPSK", &Blue);
+  AddButtonStatus(button, "DVB-S2^QPSK", &Green);
+  AddButtonStatus(button, "DVB-S2^QPSK", &Grey);
+
+  button = CreateButton(49, 1);
+  AddButtonStatus(button, "DVB-S2^8 PSK", &Blue);
+  AddButtonStatus(button, "DVB-S2^8 PSK", &Green);
+  AddButtonStatus(button, "DVB-S2^8 PSK", &Grey);
+
+  button = CreateButton(49, 2);
+  AddButtonStatus(button, "DVB-S2^16 APSK", &Blue);
+  AddButtonStatus(button, "DVB-S2^16 APSK", &Green);
+  AddButtonStatus(button, "DVB-S2^16 APSK", &Grey);
+
+  button = CreateButton(49, 3);
+  AddButtonStatus(button, "DVB-S2^32 APSK", &Blue);
+  AddButtonStatus(button, "DVB-S2^32 APSK", &Green);
+  AddButtonStatus(button, "DVB-S2^32 APSK", &Grey);
+
+  // 2nd Row, Menu 11
+
+  button = CreateButton(49, 5);
+  AddButtonStatus(button, "DVB-S^QPSK", &Blue);
+  AddButtonStatus(button, "DVB-S^QPSK", &Green);
+  AddButtonStatus(button, "DVB-S^QPSK", &Grey);
+
+  button = CreateButton(49, 6);
+  AddButtonStatus(button, "Carrier", &Blue);
+  AddButtonStatus(button, "Carrier", &Green);
+  AddButtonStatus(button, "Carrier", &Grey);
+
+  button = CreateButton(49, 7);
+  AddButtonStatus(button, "DVB-T", &Blue);
+  AddButtonStatus(button, "DVB-T", &Green);
+  AddButtonStatus(button, "DVB-T", &Grey);
+
+  button = CreateButton(49, 8);
+  AddButtonStatus(button, "Pilots^Off", &LBlue);
+  AddButtonStatus(button, "Pilots^Off", &Green);
+  AddButtonStatus(button, "Pilots^Off", &Grey);
+
+  button = CreateButton(49, 9);
+  AddButtonStatus(button, "Frames^Long", &LBlue);
+  AddButtonStatus(button, "Frames^Long", &Green);
+  AddButtonStatus(button, "Frames^Long", &Grey);
+
+  button = CreateButton(49, 12);
+  AddButtonStatus(button, "DVB-T2", &Blue);
+  AddButtonStatus(button, "DVB-T2", &Green);
+  AddButtonStatus(button, "DVB-T2", &Grey);
+}
+
+
+void Start_Highlights_Menu49()
+{
+  char vcoding[256];
+  char vsource[256];
+
+  ReadModeInput(vcoding, vsource);
+
+  GreyOutReset49();
+  if(strcmp(CurrentTXMode, TabTXMode[0])==0)
+  {
+    SelectInGroupOnMenu(49, 10, 14, 5, 1);
+    SelectInGroupOnMenu(49, 5, 7, 5, 1);
+    SelectInGroupOnMenu(49, 0, 3, 5, 1);
+  }
+  if(strcmp(CurrentTXMode, TabTXMode[1])==0)
+  {
+    SelectInGroupOnMenu(49, 10, 14, 6, 1);
+    SelectInGroupOnMenu(49, 5, 7, 6, 1);
+    SelectInGroupOnMenu(49, 0, 3, 6, 1);
+  }
+  if(strcmp(CurrentTXMode, TabTXMode[2])==0)
+  {
+    SelectInGroupOnMenu(49, 10, 14, 0, 1);
+    SelectInGroupOnMenu(49, 5, 7, 0, 1);
+    SelectInGroupOnMenu(49, 0, 3, 0, 1);
+  }
+  if(strcmp(CurrentTXMode, TabTXMode[3])==0)
+  {
+    SelectInGroupOnMenu(49, 10, 14, 1, 1);
+    SelectInGroupOnMenu(49, 5, 7, 1, 1);
+    SelectInGroupOnMenu(49, 0, 3, 1, 1);
+  }
+  if(strcmp(CurrentTXMode, TabTXMode[4])==0)
+  {
+    SelectInGroupOnMenu(49, 10, 14, 2, 1);
+    SelectInGroupOnMenu(49, 5, 7, 2, 1);
+    SelectInGroupOnMenu(49, 0, 3, 2, 1);
+  }
+  if(strcmp(CurrentTXMode, TabTXMode[5])==0)
+  {
+    SelectInGroupOnMenu(49, 10, 14, 3, 1);
+    SelectInGroupOnMenu(49, 5, 7, 3, 1);
+    SelectInGroupOnMenu(49, 0, 3, 3, 1);
+  }
+  if(strcmp(CurrentTXMode, TabTXMode[6])==0)
+  {
+    SelectInGroupOnMenu(49, 10, 14, 7, 1);
+    SelectInGroupOnMenu(49, 5, 7, 7, 1);
+    SelectInGroupOnMenu(49, 0, 3, 7, 1);
+  }
+  if(strcmp(CurrentTXMode, TabTXMode[7])==0)
+  {
+    SelectInGroupOnMenu(49, 10, 14, 12, 1);
+    SelectInGroupOnMenu(49, 5, 7, 12, 1);
+    SelectInGroupOnMenu(49, 0, 3, 12, 1);
+  }
+  if(strcmp(CurrentPilots, "on") == 0)
+  {
+    AmendButtonStatus(ButtonNumber(49, 8), 0, "Pilots^On", &LBlue);
+    AmendButtonStatus(ButtonNumber(49, 8), 2, "Pilots^On", &Grey);
+  }
+  else
+  {
+    AmendButtonStatus(ButtonNumber(49, 8), 0, "Pilots^Off", &LBlue);
+    AmendButtonStatus(ButtonNumber(49, 8), 2, "Pilots^Off", &Grey);
+  }
+  if(strcmp(CurrentFrames, "short") == 0)
+  {
+    AmendButtonStatus(ButtonNumber(49, 9), 0, "Frames^Short", &LBlue);
+    AmendButtonStatus(ButtonNumber(49, 9), 2, "Frames^Short", &Grey);
+  }
+  else
+  {
+    AmendButtonStatus(ButtonNumber(49, 9), 0, "Frames^Long", &LBlue);
+    AmendButtonStatus(ButtonNumber(49, 9), 2, "Frames^Long", &Grey);
+  }
+  GreyOut49();
+}
+
+
 void Define_Menu51()
 {
   int button;
@@ -31105,7 +31150,6 @@ int main(int argc, char **argv)
   Define_Menu8();
   Define_Menu9();
   Define_Menu10();
-  Define_Menu11();
   Define_Menu12();
   Define_Menu13();
   Define_Menu14();
@@ -31143,6 +31187,7 @@ int main(int argc, char **argv)
   Define_Menu46();
   Define_Menu47();
   Define_Menu48();
+  Define_Menu49();
   Define_Menu51();
 
   // Check if DATV Express Server required and, if so, start it

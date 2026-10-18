@@ -35,6 +35,7 @@ src/limesdr_toolbox/limesdr_dvb
 src/rpidatv
 src/bandview/bandview
 src/dvb_t_stack/Release/
+src/dvb_t2_stack/dvb_t2_stack
 src/power_meter/power_meter
 src/sweeper/sweeper
 src/streamrx/streamrx
@@ -58,6 +59,7 @@ src/meteorview/restart_counter.txt
 scripts/configs/Langstone.conf
 scripts/configs/Langstone_Lime.conf
 scripts/configs/Langstone_Pluto.conf
+scripts/configs/dhcpcd.conf.prep
 bin/adf4351
 bin/avc2ts
 bin/bandview
@@ -65,6 +67,7 @@ bin/nf_meter
 bin/pluto_nf_meter
 bin/dvb2iq
 bin/dvb_t_stack
+bin/dvb_t2_stack
 bin/keyedtx
 bin/keyedtxtouch
 bin/limesdr_dump

@@ -41,7 +41,12 @@ let BITRATE_TS=$BITRATE_TS/$FECDEN
 let BITRATE_TS=$BITRATE_TS/$GUARDDEN
 let BITRATE_TS=$BITRATE_TS/544
 
-echo "Full DVB-T TS bitrate calculated as "$BITRATE_TS
+if [ "$MODULATION" == "DVB-T2" ]; then
+  BITRATE_TS=$(/home/pi/rpidatv/bin/dvb_t2_stack -c -m $CONSTLN -b $SYMBOLRATE -e "$FECNUM"/"$FECDEN" -g 1/"$GUARD")
+  echo "DVB-T2 TS bitrate calculated as "$BITRATE_TS
+else
+  echo "Full DVB-T TS bitrate calculated as "$BITRATE_TS
+fi
 
 # Now apply margin % for non-CBR encoding (Vary for modulator and encoder)
 
