@@ -1034,6 +1034,15 @@ if ! grep -q ad9850ref /home/pi/rpidatv/src/siggen/siggenconfig.txt; then
   echo "ad9850ref=120000000" >> /home/pi/rpidatv/src/siggen/siggenconfig.txt
 fi
 
+# Add CMT2119A reference freq to siggenconfig.txt if not included (202610281)
+if ! grep -q cmt2119aref /home/pi/rpidatv/src/siggen/siggenconfig.txt; then
+  # File needs updating
+  # Delete any blank lines first
+  sed -i -e '/^$/d' /home/pi/rpidatv/src/siggen/siggenconfig.txt
+  # Add the new entry and a new line 
+  echo "cmt2119aref=26000000" >> /home/pi/rpidatv/src/siggen/siggenconfig.txt
+fi
+
 # Add LimeRFE controls to config file if not included  202107010
 if ! grep -q limerfeport= "$PATHSCRIPT"/portsdown_config.txt; then
   # File needs updating

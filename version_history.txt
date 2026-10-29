@@ -1,3 +1,6 @@
+202610280
+Add CMT2119A (G4EML MicroSynth) to SigGen
+
 202610180
 Refine Lime DVB-T2 Transmit Capability
 Restore old download address for SDRplay API

@@ -19,6 +19,7 @@ siggentouch4: siggentouch4.c
 		font/dejavu_sans_30.c \
 		font/dejavu_sans_32.c \
 		font/dejavu_sans_72.c \
+		cmt2119a.c \
 		ffunc.c \
 		ffunc.h \
 		siggentouch4.c $(LIBFLAGS2) 

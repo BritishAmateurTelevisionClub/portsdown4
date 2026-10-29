@@ -47,6 +47,7 @@ without them
 #include "Graphics.h"
 #include "/home/pi/libiio/iio.h"  // for Pluto
 #include "adf4153.h"
+#include "cmt2119a.h"
 
 #define KWHT  "\x1B[37m"
 #define KYEL  "\x1B[33m"
@@ -112,15 +113,16 @@ int CallingMenu = 1;
 
 char osc[15] = "pluto";      // Output device
 char osc_text[20] = "Pluto"; // Output device display text
-// pluto   Pluto
-// pluto5  Pluto 5th Harmonic
-// adf4351 ADF4351
-// adf5355 ADF5355
-// elcom   Elcom
-// express DATV Express
-// lime    Lime Mini
-// slo     Nort SLO
-// adf4153 ADF4153
+// pluto    Pluto
+// pluto5   Pluto 5th Harmonic
+// adf4351  ADF4351
+// adf5355  ADF5355
+// elcom    Elcom
+// express  DATV Express
+// lime     Lime Mini
+// slo      Nort SLO
+// adf4153  ADF4153
+// cmt2119a CMT2119A
 
 int64_t DisplayFreq = 437000000;  // Input freq and display freq are the same
 int64_t OutputFreq = 0;           // Calculated output frequency
@@ -139,6 +141,9 @@ char ref_freq_4153[63] = "20000000";        // read on startup from siggenconfig
 int refin4153 = 20000000;                   // adf4153/SLO ref_freq
 char ref_freq_9850[63] = "64000000";        // read on startup from siggenconfig.txt
 int refin9850 = 64000000;                   // ad9850 DDS ref_freq
+char ref_freq_2119[63] = "26000000";        // read on startup from siggenconfig.txt
+int refin2119 = 26000000;                   // cmt2119a ref_freq
+double refOsc = 26.0;                       // Ref freq used (as extern) in cmt2119a calcs
 
 uint64_t SourceUpperFreq = 13600000000;     // set every time an oscillator is selected
 uint64_t SourceLowerFreq = 54000000;        // set every time an oscillator is selected
@@ -308,6 +313,8 @@ void adf5355off();
 void ad9850write(uint32_t dataword, uint32_t powerdown);
 void ad9850On();
 void ad9850off();
+void cmt2119aon();
+void cmt2119aoff();
 void adf4153write(uint32_t dataword);
 void adf4153On();
 void ElcomOn();
@@ -800,6 +807,11 @@ void ReadSavedState()
   GetConfigParam(PATH_SGCONFIG,"ad9850ref", ref_freq_9850);
   refin9850 = atoi(ref_freq_9850);
 
+  // ref_freq_2119 is initialised to 26000000 and stays as a string
+  GetConfigParam(PATH_SGCONFIG,"cmt2119aref", ref_freq_2119);
+  refin2119 = atoi(ref_freq_2119);
+  refOsc = (double)(refin2119)/1000000.0;
+
   // Read Pluto IP from Portsdown Config file
   GetConfigParam(PATH_PCONFIG,"plutoip", PlutoIP);
 
@@ -885,6 +897,12 @@ void InitialiseGPIO()
   digitalWrite(GPIO_Atten_LE, HIGH);
   pinMode(GPIO_5355_LE, OUTPUT);
   digitalWrite(GPIO_5355_LE, HIGH);
+
+  if (strcmp(osc, "cmt2119a") == 0)
+  {
+    digitalWrite(GPIO_SPI_CLK, HIGH);
+    digitalWrite(GPIO_SPI_DATA, HIGH);
+  }
 }
 
 
@@ -2739,6 +2757,10 @@ void AdjustFreq(int button)
     {
       adf4153On(); // Change ADF4153 Freq
     }
+    if (strcmp(osc, "cmt2119a")==0)
+    {
+      cmt2119aon(); // Change CMT2119A Freq
+    }
   }
 
   if ((strcmp(osc, "lime") == 0) && (LimeRun)) // Change Lime frequency even if in standby
@@ -3037,6 +3059,7 @@ void AdjustLevel(int Button)
     }
   }
 }
+
 
 void CalcOPLevel()
 {
@@ -4340,6 +4363,18 @@ void ad9850off()
 }
 
 
+void cmt2119aon()
+{
+  SetCMT2119AFreq(DisplayFreq);
+}
+
+
+void cmt2119aoff()
+{
+  digitalWrite(GPIO_SPI_DATA, LOW);
+}
+
+
 void adf4153write(uint32_t dataword)
 {
   // Nominate pins using WiringPi numbers
@@ -4823,7 +4858,7 @@ void InitOsc()
   if ((strcmp(osc, "pluto") == 0)   || (strcmp(osc, "pluto5") == 0) 
    || (strcmp(osc, "elcom") == 0)   || (strcmp(osc, "express") == 0) 
    || (strcmp(osc, "lime") == 0)    || (strcmp(osc, "slo") == 0)
-   || (strcmp(osc, "adf4153") == 0) || (strcmp(osc, "ad9850") == 0))
+   || (strcmp(osc, "adf4153") == 0) || (strcmp(osc, "ad9850") == 0) || (strcmp(osc, "cmt2119a") == 0))
   {
     AttenIn = 0;
     SetAtten(0);
@@ -4832,7 +4867,7 @@ void InitOsc()
   // Turn off modulation if not compatible with mode
   if ((strcmp(osc, "pluto") == 0)   || (strcmp(osc, "pluto5") == 0)  || (strcmp(osc, "elcom") == 0)
    || (strcmp(osc, "adf4351") == 0) || (strcmp(osc, "adf5355") == 0) || (strcmp(osc, "slo") == 0)
-   || (strcmp(osc, "adf4153") == 0) || (strcmp(osc, "lime") == 0) || (strcmp(osc, "ad9850") == 0))
+   || (strcmp(osc, "adf4153") == 0) || (strcmp(osc, "lime") == 0) || (strcmp(osc, "ad9850") == 0) || (strcmp(osc, "cmt2119a") == 0))
   {
     ModOn = 0;
   }
@@ -4849,7 +4884,7 @@ void InitOsc()
     strcpy(Param, osc);
     strcat(Param, "points");
     GetConfigParam(PATH_CAL, Param, Value);
-    CalPoints = atoi(Value);
+     CalPoints = atoi(Value);
     for ( n = 1; n <= CalPoints; n = n + 1 )
     {
       snprintf(PointNumber, 4, "%d", n);
@@ -4916,6 +4951,17 @@ void InitOsc()
     SetButtonStatus(ButtonNumber(11, 21), 1);        //hide frequency increment above 99 MHz
   }
 
+  if (strcmp(osc, "cmt2119a") == 0)
+  {
+    // Hide unused frequency buttons
+    SetButtonStatus(ButtonNumber(11, 8), 1);         // hide frequency decrement above 9.99 GHz
+    SetButtonStatus(ButtonNumber(11, 17), 1);        // hide frequency decrement for 10 Hz
+    SetButtonStatus(ButtonNumber(11, 18), 1);        // hide frequency decrement for 1 Hz
+    SetButtonStatus(ButtonNumber(11, 19), 1);        // hide frequency increment above 9.99 GHz
+    SetButtonStatus(ButtonNumber(11, 28), 1);        // hide frequency increment for 10 Hz
+    SetButtonStatus(ButtonNumber(11, 29), 1);        // hide frequency increment for 1 Hz
+  }
+
   // Hide the unused level buttons
   if (AttenIn == 0)
   {
@@ -4927,7 +4973,7 @@ void InitOsc()
       SetButtonStatus(ButtonNumber(11, 7), 1);         // Hide increment 10ths
     }
     if ((strcmp(osc, "elcom") == 0) || (strcmp(osc, "slo") == 0) 
-     || (strcmp(osc, "adf4153") == 0) || (strcmp(osc, "ad9850") == 0))
+     || (strcmp(osc, "adf4153") == 0) || (strcmp(osc, "ad9850") == 0) || (strcmp(osc, "cmt2119a") == 0))
     {
       SetButtonStatus(ButtonNumber(11, 0), 1);         // Hide decrement 10s
       SetButtonStatus(ButtonNumber(11, 1), 1);         // Hide decrement 1s
@@ -5126,6 +5172,10 @@ void SelectOsc(int NoButton)      // Output Oscillator
     strcpy(osc, "ad9850");
     strcpy(osc_text, "AD9850");  
     break;
+  case 11:
+    strcpy(osc, "cmt2119a");
+    strcpy(osc_text, "CMT2119A");  
+    break;
   }
   SetConfigParam(PATH_SGCONFIG, "osc", osc);
   printf("SelectOsc Calling InitOsc\n");
@@ -5252,6 +5302,13 @@ void ImposeBounds()  // Constrain DisplayFreq and level to physical limits
     }
   }
 
+  if (strcmp(osc, "cmt2119a")==0)
+  {
+    SourceUpperFreq = 1297000000;
+    SourceLowerFreq = 160000000;
+    strcpy(osc_text, "CMT2119A");
+  }
+
   if (DisplayFreq > SourceUpperFreq)
   {
     DisplayFreq = SourceUpperFreq;
@@ -5311,6 +5368,10 @@ void OscStart()
     ad9850On();
   }
 
+  if (strcmp(osc, "cmt2119a") == 0)
+  {
+    cmt2119aon();
+  }
 
   if (strcmp(osc, "express")==0)
   {
@@ -5365,6 +5426,11 @@ void OscStop()
   if (strcmp(osc, "ad9850") == 0)
   {
     ad9850off();
+  }
+
+  if (strcmp(osc, "cmt2119a") == 0)
+  {
+    cmt2119aoff();
   }
 
   if ((strcmp(osc, "elcom") == 0) && (CurrentMenu == 11))
@@ -6141,6 +6207,28 @@ void ChangeADFRef(int NoButton)
     refin9850 = atoi(ref_freq_9850);
     ImposeBounds();  // recalculate frequency limits
     break;
+  case 8:
+    snprintf(RequestText, 50, "Enter new CMT2119A Reference Frequency in Hz");
+    strcpyn(InitText, ref_freq_2119, 10);
+    while (Spaces >= 1)
+    {
+      Keyboard(RequestText, InitText, 8);
+  
+      // Check that there are no spaces or other characters
+      Spaces = 0;
+      for (j = 0; j < strlen(KeyboardReturn); j = j + 1)
+      {
+        if ( !(isdigit(KeyboardReturn[j])) )
+        {
+          Spaces = Spaces + 1;
+        }
+      }
+    }
+    strcpy(ref_freq_2119, KeyboardReturn);
+    SetConfigParam(PATH_SGCONFIG, "cmt2119aref", KeyboardReturn);
+    refin2119 = atoi(ref_freq_2119);
+    refOsc = (double)(refin2119)/1000000.0;
+    break;
   default:
     break;
   }
@@ -6148,6 +6236,7 @@ void ChangeADFRef(int NoButton)
   printf("ADF5355 Ref set to: %s\n", ref_freq_5355);
   printf("ADF4153/SLO Ref set to: %s\n", ref_freq_4153);
   printf("AD9850 Ref set to: %s\n", ref_freq_9850);
+  printf("CMT2119A Ref set to: %s\n", ref_freq_2119);
 }
 
 
@@ -6273,6 +6362,7 @@ void waituntil(int w, int h)
         case 8:   // Nort SLO
         case 9:   // ADF4153
         case 10:  // AD9850 DDS
+        case 11:  // CMT2119A
           SelectOsc(i); 
           break;
         default:
@@ -6365,14 +6455,22 @@ void waituntil(int w, int h)
           Start_Highlights_Menu4();
           UpdateWindow();
           break;
-        case 8:                               // Perform Pluto Expansion
-          if (GetButtonStatus(ButtonNumber(4, 8)) == 1)
+        case 8:                               // Set CMT2119A Ref or Perform Pluto Expansion
+          if ((GetButtonStatus(ButtonNumber(4, 8)) == 1) && (strcmp(osc, "pluto") == 0))  // Pluto selected
           {
             system("/home/pi/rpidatv/scripts/pluto_set_ad.sh");
             MsgBox2("Pluto expanded to AD9364 status", "You must reboot the Pluto now");
             wait_touch();
             SetButtonStatus(ButtonNumber(4, 8), 0);
           }
+          if (strcmp(osc, "cmt2119a") == 0)
+          {
+            printf("Changing CMT2119A Ref\n");
+            ChangeADFRef(i);
+          }
+          Start_Highlights_Menu4();
+          UpdateWindow();
+          break;
         case 9:                               // Set Pluto Ref
           printf("Changing Pluto XO\n");
           ChangePlutoXO();
@@ -6510,6 +6608,20 @@ void waituntil(int w, int h)
             }
             Start_Highlights_Menu11();
             UpdateWindow();
+          }
+          if (strcmp(osc, "cmt2119a") == 0)
+          {
+            if (OutputStatus == 1)  // Output on
+            {
+              printf("Program EEPROM!!\n");
+              BurnCMT2119AEPROM();
+            }
+            else                   // Output off
+            {
+              DisplayFreq = ReadCMT2119AEPROM();
+              Start_Highlights_Menu11();
+              UpdateWindow();
+            }
           }
           break;
         case 33:                                   // Exit
@@ -6660,6 +6772,10 @@ void Define_Menu2()
   AddButtonStatus(button, "AD9850^DDS", &Blue);
   AddButtonStatus(button, "AD9850^DDS", &Green);
 
+  button = CreateButton(2, 11);                           // CMT2119A
+  AddButtonStatus(button, "CMT2119A^MicroSynth", &Blue);
+  AddButtonStatus(button, "CMT2119A^MicroSynth", &Green);
+
 }
 
 void Start_Highlights_Menu2()
@@ -6668,52 +6784,57 @@ void Start_Highlights_Menu2()
   if (strcmp(osc, "pluto") == 0)
   {
     SelectInGroupOnMenu(2, 0, 3, 0, 1);
-    SelectInGroupOnMenu(2, 5, 10, 0, 1);
+    SelectInGroupOnMenu(2, 5, 11, 0, 1);
   }
   if (strcmp(osc, "pluto5") == 0)
   {
     SelectInGroupOnMenu(2, 0, 3, 1, 1);
-    SelectInGroupOnMenu(2, 5, 10, 1, 1);
+    SelectInGroupOnMenu(2, 5, 11, 1, 1);
   }
   if (strcmp(osc, "express") == 0)
   {
     SelectInGroupOnMenu(2, 0, 3, 2, 1);
-    SelectInGroupOnMenu(2, 5, 10, 2, 1);
+    SelectInGroupOnMenu(2, 5, 11, 2, 1);
   }
   if (strcmp(osc, "elcom") == 0)
   {
     SelectInGroupOnMenu(2, 0, 3, 3, 1);
-    SelectInGroupOnMenu(2, 5, 10, 3, 1);
+    SelectInGroupOnMenu(2, 5, 11, 3, 1);
   }
   if (strcmp(osc, "adf4351") == 0)
   {
     SelectInGroupOnMenu(2, 0, 3, 5, 1);
-    SelectInGroupOnMenu(2, 5, 10, 5, 1);
+    SelectInGroupOnMenu(2, 5, 11, 5, 1);
   }
   if (strcmp(osc, "adf5355") == 0)
   {
     SelectInGroupOnMenu(2, 0, 3, 6, 1);
-    SelectInGroupOnMenu(2, 5, 10, 6, 1);
+    SelectInGroupOnMenu(2, 5, 11, 6, 1);
   }
   if (strcmp(osc, "lime") == 0)
   {
     SelectInGroupOnMenu(2, 0, 3, 7, 1);
-    SelectInGroupOnMenu(2, 5, 10, 7, 1);
+    SelectInGroupOnMenu(2, 5, 11, 7, 1);
   }
   if (strcmp(osc, "slo") == 0)
   {
     SelectInGroupOnMenu(2, 0, 3, 8, 1);
-    SelectInGroupOnMenu(2, 5, 10, 8, 1);
+    SelectInGroupOnMenu(2, 5, 11, 8, 1);
   }
   if (strcmp(osc, "adf4153") == 0)
   {
     SelectInGroupOnMenu(2, 0, 3, 9, 1);
-    SelectInGroupOnMenu(2, 5, 10, 9, 1);
+    SelectInGroupOnMenu(2, 5, 11, 9, 1);
   }
   if (strcmp(osc, "ad9850") == 0)
   {
     SelectInGroupOnMenu(2, 0, 3, 10, 1);
-    SelectInGroupOnMenu(2, 5, 10, 10, 1);
+    SelectInGroupOnMenu(2, 5, 11, 10, 1);
+  }
+  if (strcmp(osc, "cmt2119a") == 0)
+  {
+    SelectInGroupOnMenu(2, 0, 3, 10, 1);
+    SelectInGroupOnMenu(2, 5, 11, 11, 1);
   }
 }
 
@@ -6811,17 +6932,31 @@ void Define_Menu4()
   button = CreateButton(4, 7);
   AddButtonStatus(button, "Check Pluto^AD9364", &Blue);
 
-  button = CreateButton(4, 8);  // Hidden till called by button 7
+  button = CreateButton(4, 8);
   AddButtonStatus(button, " ", &Grey);
   AddButtonStatus(button, "Update Pluto^to AD9364", &Red);
+  AddButtonStatus(button, "Set Ref^CMT2119A", &Blue);
 
   button = CreateButton(4, 9);
   AddButtonStatus(button, "Set Ref^Pluto", &Blue);
 }
 
+
 void Start_Highlights_Menu4()
 {
+  if (strcmp(osc, "cmt2119a") == 0)
+  {
+    SetButtonStatus(ButtonNumber(4, 8), 2);
+  }
+  if (strcmp(osc, "pluto") == 0)  // Pluto selected
+  {
+    if (GetButtonStatus(ButtonNumber(4, 8)) != 1) // So not trying to extend Pluto
+    {
+      SetButtonStatus(ButtonNumber(4, 8), 0);     // Grey out button
+    }
+  }
 }
+
 
 void Define_Menu11()  // Control Panel
 {
@@ -6913,35 +7048,50 @@ void Start_Highlights_Menu11()
     SetButtonStatus(ButtonNumber(11, 30), 2); // Grey because Lime or Pluto Cal required
   }
   
-  if (strcmp(osc, "express") == 0)                     // QPSK or Pluto Cal
+  if (strcmp(osc, "cmt2119a") == 0)
   {
-    SetButtonStatus(ButtonNumber(11, 32), ModOn);
-  }
-  else if (strcmp(osc, "lime") == 0)
-  {
-    if ((LimeCalibrated) && !(LimeCalRequired))
+    if (OutputStatus == 0) // Off
     {
-      SetButtonStatus(ButtonNumber(11, 32), 5);  // Blue
+      AmendButtonStatus(ButtonNumber(11, 32), 0, "Read^EEPROM", &Blue);
     }
-    else
+    else                   // Output on
     {
-      SetButtonStatus(ButtonNumber(11, 32), 6);  // Red requires Cal
+      AmendButtonStatus(ButtonNumber(11, 32), 0, "Program^EEPROM", &Blue);
     }
-  }
-  else if ((strcmp(osc, "pluto") == 0) || (strcmp(osc, "pluto5") == 0))
-  {
-    if (PlutoCalValid)
-    {
-      SetButtonStatus(ButtonNumber(11, 32), 3);  // Blue
-    }
-    else
-    {
-      SetButtonStatus(ButtonNumber(11, 32), 4);  // Red requires Cal
-    }
+    SetButtonStatus(ButtonNumber(11, 32), 0);
   }
   else
   {
-    SetButtonStatus(ButtonNumber(11, 32), 2);
+    if (strcmp(osc, "express") == 0)                     // QPSK or Pluto Cal
+    {
+      SetButtonStatus(ButtonNumber(11, 32), ModOn);
+    }
+    else if (strcmp(osc, "lime") == 0)
+    {
+      if ((LimeCalibrated) && !(LimeCalRequired))
+      {
+        SetButtonStatus(ButtonNumber(11, 32), 5);  // Blue
+      }
+      else
+      {
+        SetButtonStatus(ButtonNumber(11, 32), 6);  // Red requires Cal
+      }
+    }
+    else if ((strcmp(osc, "pluto") == 0) || (strcmp(osc, "pluto5") == 0))
+    {
+      if (PlutoCalValid)
+      {
+        SetButtonStatus(ButtonNumber(11, 32), 3);  // Blue
+      }
+      else
+      {
+        SetButtonStatus(ButtonNumber(11, 32), 4);  // Red requires Cal
+      }
+    }
+    else
+    {
+      SetButtonStatus(ButtonNumber(11, 32), 2);
+    }
   }
 }
 
