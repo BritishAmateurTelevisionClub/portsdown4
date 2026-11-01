@@ -1,3 +1,9 @@
+202611010
+Enable GPIO pin 21 on use of Pluto Test Equipment
+Add locator and time to ISS tracking screen
+Clarify Pluto firmware version display
+Add dedicated bandwidth options for DVB-T2
+
 202610280
 Add CMT2119A (G4EML MicroSynth) to SigGen
 

@@ -10,6 +10,7 @@
 #include <linux/types.h>
 #include <linux/spi/spidev.h>
 #include <math.h>
+#include <wiringPi.h>
 #include <signal.h>
 #include <dirent.h>
 #include <pthread.h>
@@ -133,7 +134,8 @@ int refendpixel;         // 1 to 249
 int sigstartpixel;       // 1 to 249
 int sigendpixel;         // 1 to 249
 int peakPixel;           // 1 to 249
-int peakLine;           // 1 to 249
+int peakLine;            // 1 to 249
+uint8_t BandBit7GPIO = 13;   // BandBit 7 Pin 21 BCM 9 to switch RX input to Pluto
 
 int levelhistory[255];   // 
 int levelhistoryindex = 0;
@@ -4883,6 +4885,7 @@ static void cleanexit(int calling_exit_code)
   exit_code = calling_exit_code;
   app_exit = true;
   printf("Clean Exit Code %d\n", exit_code);
+  digitalWrite(BandBit7GPIO, LOW);
   usleep(1000000);
   char Commnd[255];
   sprintf(Commnd,"stty echo");
@@ -4894,6 +4897,7 @@ static void cleanexit(int calling_exit_code)
 
 static void terminate(int sig)
 {
+  digitalWrite(BandBit7GPIO, LOW);
   app_exit = true;
   printf("Terminating\n");
   usleep(1000000);
@@ -4975,7 +4979,6 @@ int main(void)
     }
   }
 
-
   if(NoDeviceEvent != 7)  // Touchscreen detected
   {
     // Create Touchscreen thread
@@ -5027,6 +5030,18 @@ int main(void)
   Define_Menu9();
   Define_Menu10();
   Define_Menu41();
+
+  // Set up wiringPi module
+  if (wiringPiSetup() < 0)
+  {
+    return 0;
+  }
+
+  // Set all nominated pins to outputs
+  pinMode(BandBit7GPIO, OUTPUT);
+
+  // Set idle conditions
+  digitalWrite(BandBit7GPIO, HIGH);
 
   ReadSavedParams();
 
