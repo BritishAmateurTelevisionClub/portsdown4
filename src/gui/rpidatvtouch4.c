@@ -179,7 +179,9 @@ char TabBandNumbers[16][10]={"1111", "2222", "3333", "4444", "5555", "2111", "02
 
 // Defaults for Menus
 int TabSR[9]={125,333,1000,2000,4000, 88, 250, 500, 3000};
+int TabBW[9]={333, 1000, 1350, 1700, 2000, 4000, 6000, 7000, 8000};
 char SRLabel[9][255]={"SR 125","SR 333","SR1000","SR2000","SR4000", "SR 88", "SR 250", "SR 500", "SR3000"};
+char BWLabel[9][255]={"333 kHz", "1000 kHz", "1350 kHz", "1700 kHz", "2 MHz", "4 MHz", "6 MHz", "7 MHz", "8 MHz"};
 int TabFec[5]={1, 2, 3, 5, 7};
 int TabS2Fec[9]={14, 13, 12, 35, 23, 34, 56, 89, 91};
 char S2FECLabel[9][7]={"1/4", "1/3", "1/2", "3/5", "2/3", "3/4", "5/6", "8/9", "9/10"};
@@ -442,6 +444,71 @@ pthread_t thbuttonIQPlay;   //  Handles touches to stop IQ player
 pthread_t thmouse;          //  Listens to the mouse
 pthread_t thiss;            //  Refreshes the ISS tracker position on Menu 51
 
+// ************** Menu List **********************************//
+
+// Menus 1 - 10 are classic 25-button menus
+// Menus 11 - 40 are 10-button menus
+// Menu 41 is a keyboard
+// Menus 42 - 50 are 15-button menus
+// Menus 51 - 55 are 20-button menus
+
+// 1  Main Menu
+// 2  Menu 2
+// 3  Menu 3 Configs
+// 4  File Menu
+// 5  Network and Wifi
+// 6  RTL-FM Audio Receiver
+// 7  Test Equipment
+// 8  Receiver Menu
+// 9  Band Details or Transverter
+// 10 Transmit Frequency Selection
+// 11 DVB-T/T2 Bandwidth
+// 12 Encoding Selection
+// 13 Manage Contest Codes
+// 14 Video Format
+// 15 Pluto and LibreSDR Configuration
+// 16 DVB-T/T2 Parameters
+// 17 Transmit Symbol Rate or DVB-T Bandwidth
+// 18 Transmit FEC Selection (DVB-S)
+// 19 Transverter Selection
+// 20 Stream Viewer Selection
+// 21 EasyCap Video Input
+// 22 Caption Selection (could be simplified to a toggle)
+// 23 Audio Input Selection
+// 24 Attenuator Selection
+// 25 DVB-S2 FEC Selection
+// 26 Receiver LO Setting
+// 27 Frequency Preset Setting
+// 28 Symbol Rate/Bandwidth Preset Setting
+// 29 Call, Locator and PID Setting
+// 30 HDMI Display Selection
+// 31 Amend Site Name and Locator
+// 32 Select and Set Reference Frequency (unused)
+// 33 Check for Software Update
+// 34 Start-up App
+// 35 Stream Output Selection
+// 36 WiFi Configuration (unused)
+// 37 Lime Configuration
+// 38 Answer Yes or No
+// 39 Langstone Configuration
+// 40 TS IP Configuration
+// 41 Keyboard
+// 42 Output Device
+// 43 System Configuration
+// 44 Jetson Configuration
+// 45 Video Source
+// 46 Portsdown Receiver Configuration
+// 47 Portsdown Test Card Selection
+// 48 HamTV Merger Client RX
+// 49 Modulation Selection
+// 50
+// 51 ISS Tracker
+// 52
+// 53
+// 54
+// 55
+
+
 // ************** Function Prototypes **********************************//
 
 void GetConfigParam(char *PathConfigFile, char *Param, char *Value);
@@ -630,6 +697,7 @@ void SelectFormat(int NoButton);
 void SelectSource(int NoButton);
 void SelectFreq(int NoButton);
 void SelectSR(int NoButton);
+void SelectBW(int NoButton);
 void SelectFec(int NoButton);
 void SelectLMSR(int NoButton);
 void SelectLMFREQ(int NoButton);
@@ -768,6 +836,8 @@ void Define_Menu9();
 void Start_Highlights_Menu9();
 void Define_Menu10();
 void Start_Highlights_Menu10();
+void Define_Menu11();
+void Start_Highlights_Menu11();
 void Define_Menu12();
 void Start_Highlights_Menu12();
 void Define_Menu13();
@@ -10611,7 +10681,7 @@ void SelectFreq(int NoButton)  //Frequency
   }
 }
 
-void SelectSR(int NoButton)  // Symbol Rate
+void SelectSR(int NoButton)  // DVB-S/S2 Symbol Rate
 {
   char Value[255];
 
@@ -10635,6 +10705,24 @@ void SelectSR(int NoButton)  // Symbol Rate
     SetConfigParam(PATH_RXPRESETS, "rx0sr", Value);
   }
 }
+
+
+void SelectBW(int NoButton)  // DVB-T/T2 Bandwidth
+{
+  char Value[255];
+
+  SelectInGroupOnMenu(CurrentMenu, 5, 9, NoButton, 1);
+  SelectInGroupOnMenu(CurrentMenu, 0, 3, NoButton, 1);
+  if (NoButton < 4)
+  {
+    NoButton = NoButton + 10;
+  }
+
+  SR = TabBW[NoButton - 5];
+  sprintf(Value, "%d", SR);
+  SetConfigParam(PATH_PCONFIG, "symbolrate", Value);
+}
+
 
 void SelectFec(int NoButton)  // FEC
 {
@@ -18681,11 +18769,11 @@ void CheckPlutoFirmware()
 
   if (strcmp(firmware_version, "Pluto Firmware Version is v0.31-4-g9ceb-dirty") == 0)
   {
-    MsgBox4(firmware_version, "This is correct for Portsdown operation", "up to 4.2 GHz", "Touch Screen to Continue");
+    MsgBox4("Firmware Version is v0.31-4-g9ceb-dirty (2101)", "This is correct for Portsdown operation", "up to 4.2 GHz", "Touch Screen to Continue");
   }
   else if (strcmp(firmware_version2, "Pluto Firmware Version is v0.32-dirty") == 0)
   {
-    MsgBox4(firmware_version, "This is correct for Portsdown operation", "up to 6.0 GHz", "Touch Screen to Continue");
+    MsgBox4("Firmware Version is v0.32-dirty (2110)", "This is correct for Portsdown operation", "up to 6.0 GHz", "Touch Screen to Continue");
   }
   else
   {
@@ -20336,6 +20424,7 @@ void *TrackDisplay(void * arg)
   FILE *fp;
   char response[255] = "";
   char line1[255];
+  char line1a[255];
   char line2[255];
   char line2a[255] = "Actual         azimuth       elevation        ";
   int firstDP;
@@ -20446,13 +20535,28 @@ void *TrackDisplay(void * arg)
       }
     }
 
+    // Add current locator to line1
+    strcpy (line1a, "from ");
+    strcat (line1a, Locator);
+
+    // Add current time to Line 2
+    char TIMEtext[63];
+    t = time(NULL);                                                      // Look up current time
+    strftime(TIMEtext, sizeof(TIMEtext), "%H:%M:%S UTC", gmtime(&t));    // Form new UTC time string
+
     // Paint to screen
-    rectangle(100, hscreen - 140, 450, 55, 0, 0, 0);
+    rectangle(100, hscreen - 140, 650, 55, 0, 0, 0);
     Text2(100, hscreen - 100, line1, font_ptr);
+    Text2(570, hscreen - 100, line1a, font_ptr);
     if ((tracking_status == 1) || (tracking_status == 2) || (tracking_status == 3))
     {
       Text2(100, hscreen - 130, line2a, font_ptr);
     }
+    Text2(570, hscreen - 130, TIMEtext, font_ptr);         // display time       
+
+    refreshMouseBackground();
+    draw_cursor_foreground(mouse_x, mouse_y);
+    UpdateWeb();
     usleep(1000000);
   }
 
@@ -20813,12 +20917,23 @@ void waituntil(int w,int h)
           }
           UpdateWindow();
           break;
-        case 11:
-          printf("MENU 17 \n");       // SR
-          CurrentMenu=17;
-          setBackColour(0, 0, 0);
-          clearScreen();
-          Start_Highlights_Menu17();
+        case 11:                        // SR or Bandwidth
+          if ((strcmp(CurrentTXMode, "DVB-T") == 0) || (strcmp(CurrentTXMode, "DVB-T2") == 0))
+          {
+            printf("MENU 11 \n");
+            CurrentMenu = 11;
+            setBackColour(0, 0, 0);
+            clearScreen();
+            Start_Highlights_Menu11();
+          }
+          else
+          {
+            printf("MENU 17 \n");
+            CurrentMenu = 17;
+            setBackColour(0, 0, 0);
+            clearScreen();
+            Start_Highlights_Menu17();
+          }  
           UpdateWindow();
           break;
         case 12:
@@ -22283,6 +22398,69 @@ void waituntil(int w,int h)
         UpdateWindow();
         continue;   // Completed Menu 10 action, go and wait for touch
       }
+
+      if (CurrentMenu == 11)  // Menu 11 DVB-T/T2 Bandwidth
+      {
+        printf("Button Event %d, Entering Menu 11 Case Statement\n", i);
+        switch (i)
+        {
+        case 4:                               // Cancel
+          SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 1);
+          printf("BW Cancel\n");
+          break;
+        case 5:                               // BW 1
+          SelectBW(i);
+          printf("BW 1\n");
+          break;
+        case 6:                               // BW 2
+          SelectBW(i);
+          printf("BW 2\n");
+          break;
+        case 7:                               // BW 3
+          SelectBW(i);
+          printf("BW 3\n");
+          break;
+        case 8:                               // BW 4
+          SelectBW(i);
+          printf("BW 4\n");
+          break;
+        case 9:                               // BW 5
+          SelectBW(i);
+          printf("BW 5\n");
+          break;
+        case 0:                               // BW 6
+          SelectBW(i);
+          printf("BW 6\n");
+          break;
+        case 1:                               // BW 7
+          SelectBW(i);
+          printf("BW 7\n");
+          break;
+        case 2:                               // BW 8
+          SelectBW(i);
+          printf("BW 8\n");
+          break;
+        case 3:                               // BW 9
+          SelectBW(i);
+          printf("BW 8\n");
+          break;
+        default:
+          printf("Menu 17 Error\n");
+        }
+        UpdateWindow();
+        usleep(500000);
+        SelectInGroupOnMenu(CurrentMenu, 4, 4, 4, 0); // Reset cancel (even if not selected)
+        printf("Returning to MENU 1 from Menu 17\n");
+        CurrentMenu=1;
+        setBackColour(255, 255, 255);
+        clearScreen();
+        setBackColour(0, 0, 0);
+        Start_Highlights_Menu1();
+        UpdateWindow();
+        continue;   // Completed Menu 17 action, go and wait for touch
+      }
+
+
 
       if (CurrentMenu == 12)  // Menu 12 Encoding
       {
@@ -25069,18 +25247,21 @@ void Start_Highlights_Menu1()
 
   char SRtext[255];
   strcpy(Param,"symbolrate");
-  GetConfigParam(PATH_PCONFIG,Param,Value);
+  GetConfigParam(PATH_PCONFIG, Param, Value);
   printf("Value=%s %s\n",Value,"SR");
-  if (strcmp(CurrentTXMode, "DVB-T") != 0)  //not DVB-T
+
+  if ((strcmp(CurrentTXMode, "DVB-T") != 0) && (strcmp(CurrentTXMode, "DVB-T2") != 0))  // not DVB-T or DVB-T2
   {
     strcpy(SRtext, "Sym Rate^ ");
+    strcat(SRtext, Value);
+    strcat(SRtext, " ");
   }
   else
   {
     strcpy(SRtext, "Bandwidth^ ");
+    strcat(SRtext, Value);
+    strcat(SRtext, " kHz");
   }
-  strcat(SRtext, Value);
-  strcat(SRtext, " ");
   AmendButtonStatus(11, 0, SRtext, &Blue);
   AmendButtonStatus(11, 1, SRtext, &Green);
   AmendButtonStatus(11, 2, SRtext, &Grey);
@@ -27177,6 +27358,118 @@ void Start_Highlights_Menu10()
     }
   }
 }
+
+
+void Define_Menu11()
+{
+  int button;
+  strcpy(MenuTitle[11], "DVB-T/T2 Transmit Bandwidth Selection Menu (11)");
+
+  // Bottom Row, Menu 11
+
+  button = CreateButton(11, 0);
+  AddButtonStatus(button, BWLabel[5], &Blue);
+  AddButtonStatus(button, BWLabel[5], &Green);
+
+  button = CreateButton(11, 1);
+  AddButtonStatus(button, BWLabel[6], &Blue);
+  AddButtonStatus(button, BWLabel[6], &Green);
+
+  button = CreateButton(11, 2);
+  AddButtonStatus(button, BWLabel[7], &Blue);
+  AddButtonStatus(button, BWLabel[7], &Green);
+
+  button = CreateButton(11, 3);
+  AddButtonStatus(button, BWLabel[8], &Blue);
+  AddButtonStatus(button, BWLabel[8], &Green);
+
+  button = CreateButton(11, 4);
+  AddButtonStatus(button, "Cancel", &DBlue);
+  AddButtonStatus(button, "Cancel", &LBlue);
+
+  // 2nd Row, Menu 11
+
+  button = CreateButton(11, 5);
+  AddButtonStatus(button, BWLabel[0], &Blue);
+  AddButtonStatus(button, BWLabel[0], &Green);
+
+  button = CreateButton(11, 6);
+  AddButtonStatus(button, BWLabel[1], &Blue);
+  AddButtonStatus(button, BWLabel[1], &Green);
+
+  button = CreateButton(11, 7);
+  AddButtonStatus(button, BWLabel[2], &Blue);
+  AddButtonStatus(button, BWLabel[2], &Green);
+
+  button = CreateButton(11, 8);
+  AddButtonStatus(button, BWLabel[3], &Blue);
+  AddButtonStatus(button, BWLabel[3], &Green);
+
+  button = CreateButton(11, 9);
+  AddButtonStatus(button, BWLabel[4], &Blue);
+  AddButtonStatus(button, BWLabel[4], &Green);
+}
+
+
+void Start_Highlights_Menu11()
+{
+  // Symbol Rate or Bandwidth (DVB-T/T2)
+  char Param[255];
+  char Value[255];
+  int SR;
+
+  strcpy(Param,"symbolrate");
+  GetConfigParam(PATH_PCONFIG, Param, Value);
+  SR= atoi(Value);
+  printf("Value=%s %s\n",Value,"SR");
+
+  if ( SR == TabBW[0] )
+  {
+    SelectInGroupOnMenu(11, 0, 3, 5, 1);
+    SelectInGroupOnMenu(11, 5, 9, 5, 1);
+  }
+  else if ( SR == TabBW[1] )
+  {
+    SelectInGroupOnMenu(11, 0, 3, 6, 1);
+    SelectInGroupOnMenu(11, 5, 9, 6, 1);
+  }
+  else if ( SR == TabBW[2] )
+  {
+    SelectInGroupOnMenu(11, 0, 3, 7, 1);
+    SelectInGroupOnMenu(11, 5, 9, 7, 1);
+  }
+  else if ( SR == TabBW[3] )
+  {
+    SelectInGroupOnMenu(11, 0, 3, 8, 1);
+    SelectInGroupOnMenu(11, 5, 9, 8, 1);
+  }
+  else if ( SR == TabBW[4] )
+  {
+    SelectInGroupOnMenu(11, 0, 3, 9, 1);
+    SelectInGroupOnMenu(11, 5, 9, 9, 1);
+  }
+  else if ( SR == TabBW[5] )
+  {
+    SelectInGroupOnMenu(11, 0, 3, 0, 1);
+    SelectInGroupOnMenu(11, 5, 9, 0, 1);
+  }
+  else if ( SR == TabBW[6] )
+  {
+    SelectInGroupOnMenu(11, 0, 3, 1, 1);
+    SelectInGroupOnMenu(11, 5, 9, 1, 1);
+  }
+  else if ( SR == TabBW[7] )
+  {
+    SelectInGroupOnMenu(11, 0, 3, 2, 1);
+    SelectInGroupOnMenu(11, 5, 9, 2, 1);
+  }
+  else if ( SR == TabBW[8] )
+  {
+    SelectInGroupOnMenu(11, 0, 3, 3, 1);
+    SelectInGroupOnMenu(11, 5, 9, 3, 1);
+  }
+}
+
 
 
 void Define_Menu12()
@@ -31150,6 +31443,7 @@ int main(int argc, char **argv)
   Define_Menu8();
   Define_Menu9();
   Define_Menu10();
+  Define_Menu11();
   Define_Menu12();
   Define_Menu13();
   Define_Menu14();
