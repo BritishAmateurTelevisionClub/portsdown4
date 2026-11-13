@@ -29,6 +29,11 @@ accepted a synthetic H.264/AAC stream; the real encoder feed and its bitrate
 are not yet known. Neither 32-bit nor 64-bit Portsdown currently has verified
 DVB-S2 transmission via DATV-Express.
 
+**Hardware needed to continue testing:** I need access to a DATV-Express USB
+board on TANK and a dummy load or suitably attenuated receiver. Without that
+hardware, I cannot validate firmware loading, USB streaming, PTT, or decoded
+DVB-S2 RF output. The offline results do not establish transmitter operation.
+
 ## Remaining work before an integration PR
 
 1. Validate the 32-bit Trixie display, touch, capture, H.264 encoder and RF
