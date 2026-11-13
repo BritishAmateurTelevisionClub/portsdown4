@@ -1,8 +1,8 @@
 ![portsdown banner](/doc/img/Portsdown_4.jpg)
 # Portsdown Buster Build For RPi 4
 
-Experimental Pi 4/Trixie `armhf` and `arm64` porting work, including a
-standalone DATV-Express DVB-S2 backend, is summarized in the
+Experimental Pi 4/Trixie `armhf` and `arm64` native Portsdown transmitter
+work, plus a standalone DATV-Express DVB-S2 backend, is summarized in the
 [development status note](doc/trixie-development-status.md). It is not an
 installable or RF-verified release; the instructions below remain for Buster.
 
