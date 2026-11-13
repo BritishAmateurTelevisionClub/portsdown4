@@ -1,6 +1,11 @@
 ![portsdown banner](/doc/img/Portsdown_4.jpg)
 # Portsdown Buster Build For RPi 4
 
+Experimental Pi 4/Trixie `armhf` and `arm64` porting work, including a
+standalone DATV-Express DVB-S2 backend, is summarized in the
+[development status note](doc/trixie-development-status.md). It is not an
+installable or RF-verified release; the instructions below remain for Buster.
+
 **The Portsdown 4** is a DVB-S and DVB-S2 digital television system for the Raspberry Pi 4.  The core of the system was written by Evariste Courjaud F5OEO and is maintained by him.  This BATC Version, known as the Portsdown, has been developed by a team of BATC members for use with a LimeSDR, Pluto or a DATV Express PCB and a MiniTiouner or Knucker tuner.  The intention is that the design should be reproducible by someone who has never used Linux before.  Detailed instructions on loading the software are listed below, and further details of the complete system design and build are on the BATC Wiki at https://wiki.batc.org.uk/The_Portsdown_Transmitter.  There is a Forum for discussion of the project here: https://forum.batc.org.uk/viewforum.php?f=103
 
 This version is based on Raspberry Pi OS Buster Lite and is only compatible with the Raspberry Pi 4 and 7 inch screen (or DFRobot 5 inch DSI Screen).  
